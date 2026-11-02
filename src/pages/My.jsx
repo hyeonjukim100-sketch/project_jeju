@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AuthForm from '../components/AuthForm'
 import CitrusRating from '../components/CitrusRating'
 import { deleteReview, deleteTrip, listMyReviews, listTrips, photoUrls } from '../lib/reviews'
@@ -11,6 +11,35 @@ const TABS = [
   { key: 'reviews', label: '내 리뷰' },
   { key: 'favs', label: '찜한 곳' },
 ]
+
+// 리뷰·찜에서 그 장소의 설명(지도 화면의 장소 상세)으로 이어 준다. 관광지 목록에 없는 곳(근처 식당·카페)은 연결하지 않는다.
+function usePlaceLink() {
+  const spots = useAppStore((s) => s.spots)
+  const loadSpots = useAppStore((s) => s.loadSpots)
+  const selectSpot = useAppStore((s) => s.selectSpot)
+  const setPanelTab = useAppStore((s) => s.setPanelTab)
+  const navigate = useNavigate()
+  useEffect(() => {
+    loadSpots()
+  }, [])
+  const find = (placeId, title) => spots.find((x) => x.id === placeId) || spots.find((x) => x.title === title)
+  const open = (spot) => {
+    selectSpot(spot)
+    setPanelTab('places')
+    navigate('/#explore')
+  }
+  return { find, open }
+}
+
+function PlaceLink({ link, placeId, title }) {
+  const spot = link.find(placeId, title)
+  if (!spot) return null
+  return (
+    <button type="button" className="chip place-link" onClick={() => link.open(spot)}>
+      설명 보기 <i className="bi bi-chevron-right" />
+    </button>
+  )
+}
 
 // 하루 여행 기록: 날짜, 장소별 사진과 글 (본인만 보인다)
 function Trips({ userId }) {
@@ -76,6 +105,7 @@ function Trips({ userId }) {
 function MyReviews({ userId }) {
   const [rows, setRows] = useState(null)
   const toast = useAppStore((s) => s.toast)
+  const link = usePlaceLink()
   useEffect(() => {
     listMyReviews().then(setRows).catch(() => setRows([]))
   }, [userId])
@@ -88,6 +118,7 @@ function MyReviews({ userId }) {
         <li key={r.id} className="trip-card">
           <div className="d-flex align-items-center gap-2">
             <strong className="flex-grow-1">{r.place_title}</strong>
+            <PlaceLink link={link} placeId={r.place_id} title={r.place_title} />
             <button
               type="button"
               className="chip"
@@ -116,6 +147,7 @@ function MyReviews({ userId }) {
 function Favs() {
   const favs = useAppStore((s) => s.favs)
   const toggleFav = useAppStore((s) => s.toggleFav)
+  const link = usePlaceLink()
   const rows = Object.values(favs).sort((a, b) => b.created_at.localeCompare(a.created_at))
   if (rows.length === 0) return <p className="text-secondary">아직 찜한 곳이 없어요. 장소 카드의 하트(찜) 버튼을 눌러 보세요.</p>
   return (
@@ -127,6 +159,7 @@ function Favs() {
             <strong>{f.place_title}</strong>
             <div className="small text-secondary">{[f.kind, f.address].filter(Boolean).join(' · ')}</div>
           </div>
+          <PlaceLink link={link} placeId={f.place_id} title={f.place_title} />
           <button type="button" className="chip" onClick={() => toggleFav({ placeId: f.place_id, title: f.place_title })}>
             찜 풀기
           </button>

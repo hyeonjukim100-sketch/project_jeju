@@ -14,6 +14,14 @@ create table if not exists favorites (
   created_at timestamptz not null default now(),
   unique (user_id, place_id)
 );
+-- 예전에 만든 favorites 가 있으면 create 가 건너뛰어지므로, 빠진 열을 따로 채운다
+alter table favorites add column if not exists place_title text;
+alter table favorites add column if not exists kind text;
+alter table favorites add column if not exists address text;
+alter table favorites add column if not exists lat double precision;
+alter table favorites add column if not exists lng double precision;
+alter table favorites add column if not exists created_at timestamptz not null default now();
+notify pgrst, 'reload schema';
 alter table favorites enable row level security;
 drop policy if exists "favorites own select" on favorites;
 drop policy if exists "favorites own insert" on favorites;

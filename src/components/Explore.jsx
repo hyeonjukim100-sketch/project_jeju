@@ -211,7 +211,7 @@ function OlleCourses() {
 }
 
 // 동선 목록 (내 동선은 고칠 수 있고, 추천 동선은 읽기만 된다)
-function RouteList({ stops, legs, editable, onOpen }) {
+function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
   const { removeStop, moveStop } = useAppStore()
 
   // 예상 시각: 시작 + (머문 시간 + 이동시간) 을 차례로 더한다
@@ -241,6 +241,11 @@ function RouteList({ stops, legs, editable, onOpen }) {
                   <Emoji name={STOP_EMOJI[s.type] || KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
                 </button>
                 <div className="small text-secondary">{s.kind}</div>
+                {hasInfo?.(s) && (
+                  <button type="button" className="chip plan-more" onClick={() => onOpen(s)}>
+                    설명 보기 <i className="bi bi-chevron-right" />
+                  </button>
+                )}
               </div>
               {editable && (
                 <div className="plan-ctl">
@@ -279,10 +284,12 @@ function RouteList({ stops, legs, editable, onOpen }) {
 }
 
 function PlanTab({ spots }) {
-  const { plan, recPlan, planView, setPlanView, planBusy, generatePlan, adoptRecPlan, clearPlan, selectSpot, setPanelTab } = useAppStore()
+  const { plan, recPlan, planView, setPlanView, planBusy, generatePlan, adoptRecPlan, clearPlan, selectSpot, setPanelTab, addStop, favs, user, onlyRoute, setOnlyRoute } = useAppStore()
+  const favList = Object.values(favs).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
+  const info = (s) => spots.find((x) => x.title === s.title)
   const open = (s) => {
-    const spot = spots.find((x) => x.title === s.title)
+    const spot = info(s)
     if (spot) {
       selectSpot(spot)
       setPanelTab('places')
@@ -298,9 +305,41 @@ function PlanTab({ spots }) {
         <button type="button" role="tab" aria-selected={planView === 'rec'} className={planView === 'rec' ? 'on' : ''} onClick={() => setPlanView('rec')}>
           추천 동선{recPlan.stops.length > 0 && ` ${recPlan.stops.length}`}
         </button>
+        <button type="button" role="tab" aria-selected={planView === 'fav'} className={planView === 'fav' ? 'on' : ''} onClick={() => setPlanView('fav')}>
+          찜한 곳{favList.length > 0 && ` ${favList.length}`}
+        </button>
       </div>
 
-      {planView === 'mine' ? (
+      {planView === 'fav' ? (
+        !user ? (
+          <p className="small text-secondary">로그인하면 찜한 곳을 동선에 바로 담을 수 있어요.</p>
+        ) : favList.length === 0 ? (
+          <p className="small text-secondary">아직 찜한 곳이 없어요. 장소에서 “찜”을 눌러 두면 여기에 모여요.</p>
+        ) : (
+          <ul className="place-list">
+            {favList.map((f) => {
+              const inPlan = plan.stops.some((s) => s.title === f.place_title)
+              return (
+                <li key={f.place_id} className="place-row">
+                  <Emoji name={KIND_EMOJI[KIND_GROUP[f.kind]] || KIND_EMOJI[f.kind] || 'pin'} size="1.3em" />
+                  <span className="place-text">
+                    <span className="place-name">{f.place_title}</span>
+                    {f.address && <span className="small text-secondary d-block">{f.address}</span>}
+                  </span>
+                  <button
+                    type="button"
+                    className="chip"
+                    disabled={inPlan || f.lat == null}
+                    onClick={() => addStop({ type: 'spot', title: f.place_title, kind: f.kind, address: f.address, lat: f.lat, lng: f.lng })}
+                  >
+                    {inPlan ? '담김' : '담기'}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )
+      ) : planView === 'mine' ? (
         <>
           {plan.stops.length === 0 ? (
             <p className="small text-secondary">
@@ -308,10 +347,15 @@ function PlanTab({ spots }) {
             </p>
           ) : (
             <>
-              <RouteList stops={plan.stops} legs={plan.legs} editable onOpen={open} />
-              <button type="button" className="chip" onClick={clearPlan}>
-                동선 비우기
-              </button>
+              <RouteList stops={plan.stops} legs={plan.legs} editable onOpen={open} hasInfo={info} />
+              <div className="plan-actions">
+                <button type="button" className={`chip ${onlyRoute ? 'on' : ''}`} aria-pressed={onlyRoute} onClick={() => setOnlyRoute(!onlyRoute)}>
+                  <Emoji name="footprints" size="1.15em" /> {onlyRoute ? '전체 핀 보기' : '동선 확인하기'}
+                </button>
+                <button type="button" className="chip" onClick={clearPlan}>
+                  <Emoji name="wind" size="1.15em" /> 동선 비우기
+                </button>
+              </div>
               <TripRecord />
             </>
           )}
@@ -321,12 +365,12 @@ function PlanTab({ spots }) {
           <button type="button" className="btn-soft w-100" onClick={generatePlan} disabled={planBusy}>
             {planBusy ? '동선을 만드는 중…' : recPlan.stops.length ? '다시 추천받기' : '오늘 기분에 맞는 동선 추천받기'}
           </button>
-          <p className="small text-secondary mt-2">슬라이더로 고른 기분에 맞춰 규칙으로 고른 하루예요. 마음에 안 들면 다시 추천받을 수 있고, 내 동선에는 영향을 주지 않아요.</p>
+          <p className="small text-secondary mt-2">오늘의 기분을 반영해 규칙으로 고른 하루예요. 마음에 안 들면 다시 추천받을 수 있고, 내 동선에는 영향을 주지 않아요.</p>
           {recPlan.stops.length === 0 ? (
             <p className="small text-secondary mb-0">아직 추천이 없어요.</p>
           ) : (
             <>
-              <RouteList stops={recPlan.stops} legs={recPlan.legs} onOpen={open} />
+              <RouteList stops={recPlan.stops} legs={recPlan.legs} onOpen={open} hasInfo={info} />
               <button type="button" className="btn-soft w-100" onClick={adoptRecPlan}>
                 {plan.stops.length > 0 ? '내 동선을 이 추천으로 바꾸기' : '이 동선으로 하기'}
               </button>
@@ -345,7 +389,8 @@ function PlaceList({ spots }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
   const [more, setMore] = useState(40)
   useEffect(() => setMore(40), [spots])
-  if (!spots.length) return <p className="small text-secondary mt-2">불러오는 중이에요…</p>
+  const loaded = useAppStore((s) => s.spots.length > 0)
+  if (!spots.length) return <p className="small text-secondary mt-2">{loaded ? '찾는 곳이 없어요. 다른 말로 찾아 보세요.' : '불러오는 중이에요…'}</p>
   return (
     <>
       <div className="small text-secondary mt-2">{spots.length}곳</div>
@@ -373,8 +418,9 @@ function PlaceList({ spots }) {
 
 // 스크롤하면 나오는 화면: 날씨 → 3D 지도 + 하루 동선
 export default function Explore() {
-  const { spots, weather, selectedSpot: spot, selectSpot, plan, panelTab, setPanelTab, addStop, loadSpots, loadWeather } = useAppStore()
+  const { spots, weather, selectedSpot: spot, selectSpot, plan, recPlan, planView, onlyRoute, panelTab, setPanelTab, addStop, loadSpots, loadWeather } = useAppStore()
   const [kind, setKind] = useState('전체')
+  const [query, setQuery] = useState('')
   const [folded, setFolded] = useState(false) // 모바일: 시트를 접어 지도를 넓게 본다
 
   useEffect(() => {
@@ -384,18 +430,29 @@ export default function Explore() {
 
   const kinds = ['전체', '푸른 공간', '초록 공간', ...KIND_CHIPS]
   const shown = useMemo(() => {
-    if (kind === '전체') return spots
-    if (kind === '푸른 공간') return spots.filter((s) => s.space === 'blue')
-    if (kind === '초록 공간') return spots.filter((s) => s.space === 'green')
-    return spots.filter((s) => KIND_GROUP[s.kind] === kind)
-  }, [spots, kind])
+    let list = spots
+    if (kind === '푸른 공간') list = spots.filter((s) => s.space === 'blue')
+    else if (kind === '초록 공간') list = spots.filter((s) => s.space === 'green')
+    else if (kind !== '전체') list = spots.filter((s) => KIND_GROUP[s.kind] === kind)
+    const q = query.trim().toLowerCase()
+    return q ? list.filter((s) => `${s.title} ${s.address || ''}`.toLowerCase().includes(q)) : list
+  }, [spots, kind, query])
+
+  // "동선 확인하기": 지금 보는 동선의 곳만 지도에 남긴다 (식당·카페처럼 목록에 없는 곳도 핀으로)
+  const viewed = planView === 'rec' ? recPlan.stops : plan.stops
+  const routeSpots = useMemo(
+    () => viewed.map((st) => spots.find((x) => x.title === st.title) || { ...st, id: `stop:${st.title}` }),
+    [viewed, spots],
+  )
+  const routeOnly = panelTab === 'plan' && onlyRoute && planView === 'mine' && routeSpots.length > 0
+  const mapSpots = routeOnly ? routeSpots : shown
 
   return (
     <section id="explore" className="explore">
       <WeatherStrip w={weather} />
       <SuggestStrip />
       <div className="map-stage">
-        <JejuMap3D spots={shown} weather={weather} />
+        <JejuMap3D spots={mapSpots} weather={weather} />
         <aside className={`glass-panel ${panelTab === 'plan' || panelTab === 'season' || spot ? 'tall' : ''} ${folded ? 'folded' : ''}`}>
           <button type="button" className="sheet-toggle" onClick={() => setFolded((f) => !f)} aria-expanded={!folded} aria-label={folded ? '패널 펼치기' : '패널 접고 지도 보기'}>
             <i className={`bi bi-chevron-${folded ? 'up' : 'down'}`} /> {folded ? '펼치기' : '지도 보기'}
@@ -427,14 +484,16 @@ export default function Explore() {
               </div>
               <h2 className="panel-title">{spot.title}</h2>
               <div className="small text-secondary mb-2">{spot.address}</div>
-              <button
-                type="button"
-                className="btn-soft mb-2"
-                onClick={() => addStop({ type: 'spot', title: spot.title, kind: spot.kind, address: spot.address, lat: spot.lat, lng: spot.lng, tourId: spot.tourId || null })}
-              >
-                동선에 담기
-              </button>
-              <FavButton placeId={spot.id} title={spot.title} kind={spot.kind} address={spot.address} lat={spot.lat} lng={spot.lng} />
+              <div className="spot-actions">
+                <button
+                  type="button"
+                  className="btn-soft"
+                  onClick={() => addStop({ type: 'spot', title: spot.title, kind: spot.kind, address: spot.address, lat: spot.lat, lng: spot.lng, tourId: spot.tourId || null })}
+                >
+                  동선에 담기
+                </button>
+                <FavButton placeId={spot.id} title={spot.title} kind={spot.kind} address={spot.address} lat={spot.lat} lng={spot.lng} />
+              </div>
               <Gallery spot={spot} />
               <Nearby spot={spot} />
               <p className="spot-intro">{spot.intro}</p>
@@ -444,6 +503,22 @@ export default function Explore() {
             <>
               <h2 className="panel-title">느린 제주 마음지도</h2>
               <p className="small text-secondary mb-2">마음에 드는 곳의 핀을 눌러 보세요.</p>
+              <div className="place-search">
+                <i className="bi bi-search" aria-hidden="true" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="장소 이름이나 주소로 찾기"
+                  aria-label="장소 검색"
+                  enterKeyHint="search"
+                />
+                {query && (
+                  <button type="button" className="place-search-x" onClick={() => setQuery('')} aria-label="검색어 지우기">
+                    <i className="bi bi-x-lg" />
+                  </button>
+                )}
+              </div>
               <div className="kind-chips">
                 {kinds.map((k) => (
                   <button key={k} type="button" className={`chip ${k === kind ? 'on' : ''}`} onClick={() => setKind(k)}>

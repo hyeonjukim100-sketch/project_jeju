@@ -120,6 +120,8 @@ export const useAppStore = create((set, get) => ({
       get().toast('추천을 불러오지 못했어요', 'danger')
     }
   },
+  onlyRoute: false, // true 면 지도에 지금 보는 동선의 핀만 보인다
+  setOnlyRoute: (onlyRoute) => set({ onlyRoute }),
   panelTab: 'places', // 'places' | 'plan' | 'season'
   setPanelTab: (panelTab) => set({ panelTab }),
   _setStops: async (stops) => {

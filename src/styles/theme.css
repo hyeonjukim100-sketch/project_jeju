@@ -6,7 +6,7 @@
 }
 
 html, body, #root { height: 100%; }
-body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif; }
+body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 'LINE Seed Sans KR', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif; }
 .text-secondary { color: var(--sub) !important; }
 .emoji { display: inline-block; vertical-align: -0.2em; user-select: none; }
 
@@ -271,7 +271,7 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 
 /* 하루 동선 안의 작은 탭: 내 동선 / 추천 동선 */
 .sub-tabs { display: flex; gap: .4rem; margin: 0 0 .8rem; padding: .25rem; border-radius: 999px; background: var(--soft); }
-.sub-tabs button { flex: 1; min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: var(--sub); font-weight: 600; font-size: .92rem; }
+.sub-tabs button { flex: 1; min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: var(--sub); font-weight: 600; font-size: .88rem; white-space: nowrap; padding: 0 .4rem; }
 .sub-tabs button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-soft); }
 
 /* 오늘의 제안 */
@@ -325,9 +325,93 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 
 /* 장소 목록 · 탭 */
 .place-list { list-style: none; padding: 0; margin: .4rem 0 0; display: grid; gap: .3rem; max-height: 46vh; overflow-y: auto; }
-.place-list button { width: 100%; display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: .35rem .7rem; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); color: var(--ink); }
-.place-list button:hover { background: var(--soft); }
+.place-list li:not(.place-row) > button { width: 100%; display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: .35rem .7rem; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); color: var(--ink); }
+.place-list li:not(.place-row) > button:hover { background: var(--soft); }
 .place-name { font-weight: 600; }
 .panel-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: .25rem; }
 .panel-tabs button { white-space: nowrap; font-size: .85rem; gap: .2rem; padding: 0 .3rem; }
 .panel-tabs button .emoji { width: 1em !important; height: 1em !important; }
+
+/* ───────── 디자인 다듬기 (간격·탭·카드·글씨를 한 규칙으로 맞춤) ─────────
+   간격은 4의 배수 리듬: --sp-1 .4rem / --sp-2 .6rem / --sp-3 .9rem / --sp-4 1.25rem */
+:root {
+  --sp-1: .4rem; --sp-2: .6rem; --sp-3: .9rem; --sp-4: 1.25rem;
+  --r-row: 16px; --tap: 44px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+body { line-height: 1.6; letter-spacing: -.01em; word-break: keep-all; overflow-wrap: break-word; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { line-height: 1.3; letter-spacing: -.02em; text-wrap: balance; }
+p { text-wrap: pretty; }
+.small, small { line-height: 1.5; }
+
+/* 탭: 큰 탭(장소·하루 동선·계절 추천)과 작은 탭(내 동선·추천 동선·찜한 곳)이 같은 간격·높이·글씨 */
+.panel-tabs, .sub-tabs { display: flex; gap: var(--sp-1); margin: 0 0 var(--sp-3); }
+.panel-tabs button, .sub-tabs button {
+  flex: 1 1 0; min-width: 0; min-height: var(--tap); padding: 0 var(--sp-2);
+  display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
+  font-size: .88rem; font-weight: 700; white-space: nowrap; text-overflow: ellipsis;
+  transition: background .18s var(--ease), color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.sub-tabs { padding: .25rem; }
+.sub-tabs button { min-height: calc(var(--tap) - .5rem); }
+.panel-tabs button:not(.on):hover { background: var(--soft); color: var(--ink); }
+.sub-tabs button:not(.on):hover { color: var(--ink); }
+
+/* 목록 행: 장소·찜·근처·올레·계절·여행 카드가 같은 모양 (배경·테두리·모서리·안쪽 여백) */
+.place-list li:not(.place-row) > button, .place-row, .nearby-list li, .olle-item, .plan-row, .season-item {
+  border-radius: var(--r-row); border: 1px solid var(--line); background: var(--bg);
+}
+.place-list { gap: var(--sp-1); margin-top: var(--sp-2); }
+.place-list li:not(.place-row) > button { min-height: calc(var(--tap) + .4rem); padding: .5rem var(--sp-3); gap: var(--sp-3); transition: background .15s var(--ease), transform .15s var(--ease); }
+.place-list li:not(.place-row) > button:active, .place-row:active { transform: scale(.995); }
+.place-row { display: flex; align-items: center; gap: var(--sp-3); min-height: calc(var(--tap) + .4rem); padding: .5rem var(--sp-3); }
+.place-row .chip { flex: none; margin-left: auto; min-width: 3.4rem; justify-content: center; }
+.place-row .chip:disabled { opacity: .55; }
+.place-text, .place-list li:not(.place-row) > button .text-start { min-width: 0; flex: 1; text-align: left; }
+.place-name { display: block; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.place-text .small, .place-list .small { font-size: .78rem; margin-top: .1rem; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* 눌렀을 때 보이는 초점 링 (키보드 사용자) — 색은 계절 팔레트를 따른다 */
+:where(button, a, input, textarea, select):focus-visible { outline: 3px solid var(--strong); outline-offset: 2px; border-radius: 12px; }
+
+/* 칩(작은 버튼)도 터치 크기 */
+.chip { font-weight: 600; transition: background .15s var(--ease); }
+
+/* 움직임을 줄이고 싶은 사용자 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* ───────── 2차 다듬기: 줄 맞춤 · 가운데 정렬 · 줄바꿈 ───────── */
+/* 탭·칩·메뉴 안의 이모지와 글자는 한 줄 중앙선에 */
+.panel-tabs button, .sub-tabs button, .chip, .btn-soft, .nav-link-item, .kind-chips .chip, .olle-item { line-height: 1; }
+.panel-tabs .emoji, .sub-tabs .emoji, .chip .emoji, .btn-soft .emoji, .nav-link-item .emoji, .olle-item .emoji { vertical-align: middle; flex: none; }
+.chip i, .btn-soft i { line-height: 1; display: inline-flex; }
+.kind-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-1); }
+
+/* 장소 상세: 동선에 담기 · 찜 은 가운데에 나란히, 사이에 간격 */
+.spot-actions { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-2) 0 var(--sp-3); }
+/* 사진 아래 '근처 카페·식당' 탭도 가운데 */
+.nearby { margin-top: var(--sp-3); }
+.nearby > .kind-chips { justify-content: center; }
+.nearby-ctl { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: var(--sp-1); }
+.nearby-row { align-items: flex-start; }
+.gallery-thumbs { justify-content: center; }
+
+/* 한국어 줄바꿈: 단어(띄어쓰기) 단위로 읽기 좋게, 띄어쓰기 없는 긴 글은 넘치지 않게만 끊는다 */
+.bubble, .review-item, .trip-entry, .trip-read li, .spot-intro, .panel-title, .place-name, .suggest-note, .olle-card { word-break: keep-all; overflow-wrap: anywhere; }
+.spot-intro, .review-item, .trip-read li { line-height: 1.7; }
+
+/* ───────── 3차: 검색 · 동선 버튼 · 설명 보기 ───────── */
+.place-search { position: relative; display: flex; align-items: center; margin: 0 0 var(--sp-3); }
+.place-search > .bi-search { position: absolute; left: 1rem; color: var(--sub); pointer-events: none; }
+.place-search input { width: 100%; min-height: var(--tap); padding: .5rem 2.8rem .5rem 2.5rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: .92rem; }
+.place-search input::placeholder { color: var(--sub); opacity: .8; }
+.place-search input::-webkit-search-cancel-button { display: none; }
+.place-search-x { position: absolute; right: .3rem; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--sub); display: inline-flex; align-items: center; justify-content: center; }
+.place-search-x:hover { background: var(--soft); }
+
+.plan-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+.plan-actions .chip { min-width: 8.2rem; }
+.plan-more, .place-link { margin-top: .3rem; min-height: 36px; padding: .15rem .7rem; font-size: .8rem; }
+.place-link { margin-top: 0; flex: none; }
