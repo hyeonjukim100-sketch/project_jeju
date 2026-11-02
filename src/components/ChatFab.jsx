@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { sendChat } from '../api/client'
 import { useAppStore } from '../store/useAppStore'
+import { MongsumiFace } from './Mongsumi'
 
 const SUGGESTIONS = ['오늘 날씨에 맞는 느린 하루 코스를 추천해 주세요', '조용히 걷기 좋은 곳이 궁금해요']
 
@@ -49,9 +50,9 @@ export default function ChatFab() {
   return (
     <>
       {open && (
-        <div className="chat-panel" role="dialog" aria-label="AI 가이드">
+        <div className="chat-panel" role="dialog" aria-label="몽숨이 AI">
           <div className="chat-head">
-            <strong>AI 가이드</strong>
+            <strong>몽숨이 AI</strong>
             <button type="button" className="chat-x" onClick={() => setOpen(false)} aria-label="닫기">
               <i className="bi bi-x-lg" />
             </button>
@@ -107,8 +108,8 @@ export default function ChatFab() {
           <p className="chat-note">AI가 만든 답이라 틀릴 수 있어요. 의료·상담이 아닌 여행 추천이에요.</p>
         </div>
       )}
-      <button type="button" className="chat-fab" onClick={() => setOpen((o) => !o)} aria-label={open ? '대화창 닫기' : 'AI 가이드와 대화하기'}>
-        <i className="bi bi-chat-heart-fill" />
+      <button type="button" className="chat-fab" onClick={() => setOpen((o) => !o)} aria-label={open ? '대화창 닫기' : '몽숨이 AI와 대화하기'}>
+        <MongsumiFace size="2.8rem" />
       </button>
     </>
   )

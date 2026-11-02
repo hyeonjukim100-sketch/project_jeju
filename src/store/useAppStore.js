@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { fetchLegs, fetchOlle, fetchRoute, fetchSeason, fetchSpots, fetchWeather } from '../api/client'
 import { spaceOf } from '../lib/space'
+import { addFavorite, listFavorites, removeFavorite } from '../lib/reviews'
 
 // 로그인 오류를 읽기 쉬운 문장으로
 const authMessage = (error) => {
@@ -60,10 +61,14 @@ export const useAppStore = create((set, get) => ({
   authReady: !supabase,
   initAuth: () => {
     if (!supabase) return () => {}
-    supabase.auth.getSession().then(({ data }) => set({ user: data.session?.user ?? null, authReady: true }))
+    supabase.auth.getSession().then(({ data }) => {
+      set({ user: data.session?.user ?? null, authReady: true })
+      if (data.session) get().loadFavs()
+    })
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       set({ user: session?.user ?? null })
-      if (!session) set({ moodLogs: [] })
+      if (!session) set({ favs: {} })
+      else if (_event === 'SIGNED_IN') setTimeout(() => get().loadFavs(), 0) // 콜백 안에서 바로 요청하면 막힐 수 있어 한 박자 늦춘다
     })
     return () => data.subscription.unsubscribe()
   },
@@ -167,29 +172,32 @@ export const useAppStore = create((set, get) => ({
     get().toast('추천 동선을 내 동선으로 가져왔어요')
   },
 
-  // 마음 기록 — 본인 것만 (Supabase RLS 가 막아 준다). mood 칸에는 이모지 이름만 저장한다.
-  moodLogs: [],
-  moodLoading: false,
-  loadMoodLogs: async () => {
+  // 찜 — 본인만 (Supabase RLS). placeId → 행
+  favs: {},
+  loadFavs: async () => {
     if (!supabase || !get().user) return
-    set({ moodLoading: true })
-    const { data, error } = await supabase.from('mood_logs').select('*').order('created_at', { ascending: false })
-    set({ moodLoading: false })
-    if (error) return get().toast(error.message, 'danger')
-    set({ moodLogs: data })
+    try {
+      const rows = await listFavorites()
+      set({ favs: Object.fromEntries(rows.map((r) => [r.place_id, r])) })
+    } catch {
+      /* 찜을 못 불러와도 나머지는 그대로 쓴다 */
+    }
   },
-  addMoodLog: async ({ emoji, note = '', place_title = null }) => {
-    const user = get().user
-    if (!supabase || !user) return get().toast('로그인하면 기록할 수 있어요', 'warning')
-    const row = { nickname: user.user_metadata?.nickname || '익명', mood: emoji, note, place_title }
-    const { data, error } = await supabase.from('mood_logs').insert(row).select().single()
-    if (error) return get().toast(error.message, 'danger')
-    set({ moodLogs: [data, ...get().moodLogs] })
-    get().toast('마음을 기록했어요')
-  },
-  deleteMoodLog: async (id) => {
-    const { error } = await supabase.from('mood_logs').delete().eq('id', id)
-    if (error) return get().toast(error.message, 'danger')
-    set({ moodLogs: get().moodLogs.filter((l) => l.id !== id) })
+  toggleFav: async ({ placeId, title, kind, address, lat, lng }) => {
+    if (!supabase || !get().user) return get().toast('로그인하면 찜할 수 있어요', 'warning')
+    const favs = { ...get().favs }
+    try {
+      if (favs[placeId]) {
+        await removeFavorite(placeId)
+        delete favs[placeId]
+        get().toast('찜을 풀었어요')
+      } else {
+        favs[placeId] = await addFavorite({ placeId, title, kind, address, lat, lng })
+        get().toast('찜했어요')
+      }
+      set({ favs })
+    } catch (e) {
+      get().toast(e.message, 'danger')
+    }
   },
 }))

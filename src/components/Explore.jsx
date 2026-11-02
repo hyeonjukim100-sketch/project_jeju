@@ -5,13 +5,14 @@ import SuggestStrip from './SuggestStrip'
 import WeatherStrip from './WeatherStrip'
 import Emoji from './Emoji'
 import CitrusRating from './CitrusRating'
+import FavButton from './FavButton'
 import ReviewBox from './ReviewBox'
 import TripRecord from './TripRecord'
 import { fetchPhotos, fetchPlaces } from '../api/client'
 import { SPACE_LABEL } from '../lib/space'
 import { ratingsFor } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
-import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP, MOOD_LEVELS } from '../lib/moods'
+import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
 
 const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 시각을 계산한다
@@ -120,6 +121,7 @@ function Nearby({ spot }) {
                   <button type="button" className="chip" onClick={() => addStop({ type: cat === 'FD6' ? 'meal' : 'rest', title: p.title, kind: p.category, address: p.address, lat: p.lat, lng: p.lng, url: p.url })}>
                     담기
                   </button>
+                  <FavButton placeId={`kakao:${p.id}`} title={p.title} kind={p.category} address={p.address} lat={p.lat} lng={p.lng} />
                   <button type="button" className="chip" aria-expanded={openId === p.id} onClick={() => setOpenId(openId === p.id ? null : p.id)}>
                     리뷰
                   </button>
@@ -338,9 +340,40 @@ function PlanTab({ spots }) {
 }
 
 
+// 고른 종류의 장소 목록 (핀과 같은 이모지). 천여 곳일 수 있어 먼저 40곳만 보여 준다.
+function PlaceList({ spots }) {
+  const selectSpot = useAppStore((s) => s.selectSpot)
+  const [more, setMore] = useState(40)
+  useEffect(() => setMore(40), [spots])
+  if (!spots.length) return <p className="small text-secondary mt-2">불러오는 중이에요…</p>
+  return (
+    <>
+      <div className="small text-secondary mt-2">{spots.length}곳</div>
+      <ul className="place-list">
+        {spots.slice(0, more).map((s) => (
+          <li key={s.id}>
+            <button type="button" onClick={() => selectSpot(s)}>
+              <Emoji name={KIND_EMOJI[KIND_GROUP[s.kind]] || KIND_EMOJI[s.kind] || 'pin'} size="1.3em" />
+              <span className="text-start">
+                <span className="place-name">{s.title}</span>
+                <span className="small text-secondary d-block">{s.address}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {spots.length > more && (
+        <button type="button" className="chip mt-2" onClick={() => setMore((m) => m + 40)}>
+          더 보기
+        </button>
+      )}
+    </>
+  )
+}
+
 // 스크롤하면 나오는 화면: 날씨 → 3D 지도 + 하루 동선
 export default function Explore() {
-  const { spots, weather, selectedSpot: spot, moodLevel, plan, panelTab, setPanelTab, addStop, loadSpots, loadWeather } = useAppStore()
+  const { spots, weather, selectedSpot: spot, selectSpot, plan, panelTab, setPanelTab, addStop, loadSpots, loadWeather } = useAppStore()
   const [kind, setKind] = useState('전체')
   const [folded, setFolded] = useState(false) // 모바일: 시트를 접어 지도를 넓게 본다
 
@@ -356,7 +389,6 @@ export default function Explore() {
     if (kind === '초록 공간') return spots.filter((s) => s.space === 'green')
     return spots.filter((s) => KIND_GROUP[s.kind] === kind)
   }, [spots, kind])
-  const mood = MOOD_LEVELS[moodLevel]
 
   return (
     <section id="explore" className="explore">
@@ -370,13 +402,13 @@ export default function Explore() {
           </button>
           <div className="panel-tabs" role="tablist">
             <button type="button" role="tab" aria-selected={panelTab === 'places'} className={panelTab === 'places' ? 'on' : ''} onClick={() => setPanelTab('places')}>
-              장소
+              <Emoji name="pin" size="1.15em" /> 장소
             </button>
             <button type="button" role="tab" aria-selected={panelTab === 'plan'} className={panelTab === 'plan' ? 'on' : ''} onClick={() => setPanelTab('plan')}>
-              하루 동선{plan.stops.length > 0 && ` ${plan.stops.length}`}
+              <Emoji name="map" size="1.15em" /> 하루 동선{plan.stops.length > 0 && ` ${plan.stops.length}`}
             </button>
             <button type="button" role="tab" aria-selected={panelTab === 'season'} className={panelTab === 'season' ? 'on' : ''} onClick={() => setPanelTab('season')}>
-              계절 추천
+              <Emoji name="season_spring" size="1.15em" /> 계절 추천
             </button>
           </div>
 
@@ -386,6 +418,9 @@ export default function Explore() {
             <PlanTab spots={spots} />
           ) : spot ? (
             <>
+              <button type="button" className="chip mb-2" onClick={() => selectSpot(null)}>
+                <i className="bi bi-chevron-left" /> 목록으로
+              </button>
               <div className="panel-kicker">
                 {KIND_EMOJI[spot.kind] && <Emoji name={KIND_EMOJI[spot.kind]} size="1.1em" />} {spot.kind}
                 {spot.space && <span className={`space-badge ${spot.space}`}>{SPACE_LABEL[spot.space]}</span>}
@@ -399,6 +434,7 @@ export default function Explore() {
               >
                 동선에 담기
               </button>
+              <FavButton placeId={spot.id} title={spot.title} kind={spot.kind} address={spot.address} lat={spot.lat} lng={spot.lng} />
               <Gallery spot={spot} />
               <Nearby spot={spot} />
               <p className="spot-intro">{spot.intro}</p>
@@ -407,16 +443,7 @@ export default function Explore() {
           ) : (
             <>
               <h2 className="panel-title">느린 제주 마음지도</h2>
-              <p className="small text-secondary mb-2">
-                섬을 돌려 보고 핀을 눌러 보세요. 관광지 {spots.length ? `${shown.length}곳` : '불러오는 중…'}
-              </p>
-              <div className="mood-pill">
-                <Emoji name={mood.emoji} size="1.3em" /> 오늘은 “{mood.label}”
-              </div>
-              <p className="small text-secondary mb-2">
-                핀 색: <span className="dot blue" /> 푸른 공간(바다 가까이) · <span className="dot green" /> 초록 공간(오름·숲 같은 자연) · <span className="dot other" /> 그 밖.
-                장소의 성격을 나눈 것이고, 몸이나 마음에 효과가 있다는 뜻은 아니에요.
-              </p>
+              <p className="small text-secondary mb-2">마음에 드는 곳의 핀을 눌러 보세요.</p>
               <div className="kind-chips">
                 {kinds.map((k) => (
                   <button key={k} type="button" className={`chip ${k === kind ? 'on' : ''}`} onClick={() => setKind(k)}>
@@ -424,7 +451,7 @@ export default function Explore() {
                   </button>
                 ))}
               </div>
-              {kind === '올레코스' && <OlleCourses />}
+              {kind === '올레코스' ? <OlleCourses /> : <PlaceList spots={shown} />}
             </>
           )}
         </aside>

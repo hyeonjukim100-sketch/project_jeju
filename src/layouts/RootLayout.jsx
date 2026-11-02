@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import ChatFab from '../components/ChatFab'
+import Emoji from '../components/Emoji'
 import { NAV_ITEMS } from '../router'
 import { useAppStore } from '../store/useAppStore'
 
@@ -20,7 +21,7 @@ export default function RootLayout() {
         <nav className="nav-links">
           {NAV_ITEMS.map((n) => (
             <Link key={n.to} to={n.to} className={`nav-link-item ${here === n.to ? 'active' : ''}`}>
-              <i className={`bi bi-${n.icon}`} /> <span>{n.label}</span>
+              <Emoji name={n.emoji} size="1.3em" /> <span>{n.label}</span>
             </Link>
           ))}
         </nav>

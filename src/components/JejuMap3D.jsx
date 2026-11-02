@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import coast from '../data/jeju-coast.json'
 import { SEASONS, season } from '../lib/season'
+import { KIND_EMOJI, KIND_GROUP } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
 
 // 위경도 → 장면 좌표 (제주섬 중심 126.55E, 33.38N). 한라산 근처 핀은 산비탈 높이에 얹는다.
@@ -18,10 +19,6 @@ export const toScene = (lng, lat) => {
   const slope = Math.max(0, CONE_H * (1 - r / CONE_R))
   return [x, 0.32 + slope, z]
 }
-
-// 핀 색: 푸른 공간(바다 가까이) · 초록 공간(오름·숲 같은 자연) · 그 밖
-const SPACE_COLOR = { blue: '#6BB8E0', green: '#6CC08F' }
-const spaceColor = (s) => SPACE_COLOR[s.space] || '#F2A65A'
 
 // 밤에는 계절색을 어둡게 섞는다
 const NIGHT = '#1d2a3c'
@@ -71,41 +68,87 @@ function Sea({ color }) {
   )
 }
 
-// 관광지 1천여 곳을 한 번에 그리는 핀 (InstancedMesh)
+// 핀: 하얀 동그라미 안에 장소 종류 이모지. 종류마다 한 번에 그린다 (Points, 천여 곳도 가볍다)
+const pinKey = (s) => (KIND_EMOJI[KIND_GROUP[s.kind]] ? KIND_GROUP[s.kind] : KIND_EMOJI[s.kind] ? s.kind : '기타')
+
+function pinTexture(emoji, ring, onReady) {
+  const img = new Image()
+  img.onload = () => {
+    const c = document.createElement('canvas')
+    c.width = c.height = 192
+    const g = c.getContext('2d')
+    g.beginPath()
+    g.arc(96, 96, 86, 0, Math.PI * 2)
+    g.fillStyle = '#ffffff'
+    g.fill()
+    g.lineWidth = 12
+    g.strokeStyle = ring
+    g.stroke()
+    g.drawImage(img, 38, 38, 116, 116)
+    const t = new THREE.CanvasTexture(c)
+    t.colorSpace = THREE.SRGBColorSpace
+    t.anisotropy = 4
+    onReady(t)
+  }
+  img.src = `/emoji/${emoji}.png`
+}
+
+// 동그라미 선 색: 이모지 색에 맞춘다
+const RING = { 자연: '#4FA765', 오름: '#A0694A', 트레일: '#D08A3E', 문화: '#7C8DB0', 예술: '#E4799C', 시장: '#E9A23B', 올레코스: '#8A8F99', 기타: '#F2A65A' }
+
+function PinLayer({ name, spots, size = 1, ring = RING[name] || '#F2A65A', onPick, lift = 0, top = false }) {
+  const [tex, setTex] = useState(null)
+  useEffect(() => {
+    let dead = false
+    pinTexture(KIND_EMOJI[name] || 'pin', ring, (t) => !dead && setTex(t))
+    return () => {
+      dead = true
+    }
+  }, [name, ring])
+  // 핀 크기는 화면 픽셀 기준: 멀리선 작게(겹침 줄이기), 가까이선 크게(선명하게)
+  const mat = useRef()
+  useFrame(({ camera }) => {
+    if (mat.current) mat.current.size = size * THREE.MathUtils.clamp(120 / camera.position.length(), 11, 40)
+  })
+  const pos = useMemo(() => new Float32Array(spots.flatMap((s) => { const [x, y, z] = toScene(s.lng, s.lat); return [x, y + 0.08 + lift, z] })), [spots, lift])
+  if (!tex) return null
+  return (
+    <points
+      key={spots.length}
+      renderOrder={top ? 10 : 1}
+      onClick={
+        onPick &&
+        ((e) => {
+          e.stopPropagation()
+          onPick(spots[e.index])
+        })
+      }
+      onPointerOver={onPick && (() => (document.body.style.cursor = 'pointer'))}
+      onPointerOut={onPick && (() => (document.body.style.cursor = ''))}
+    >
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[pos, 3]} />
+      </bufferGeometry>
+      <pointsMaterial ref={mat} map={tex} size={size} sizeAttenuation={false} transparent alphaTest={0.4} depthTest={!top} />
+    </points>
+  )
+}
+
 function Pins({ spots }) {
-  const ref = useRef()
   const selected = useAppStore((s) => s.selectedSpot)
   const selectSpot = useAppStore((s) => s.selectSpot)
-
-  useLayoutEffect(() => {
-    const m = new THREE.Matrix4()
-    const c = new THREE.Color()
-    spots.forEach((s, i) => {
-      const [x, y, z] = toScene(s.lng, s.lat)
-      const big = selected?.id === s.id
-      m.compose(new THREE.Vector3(x, y, z), new THREE.Quaternion(), new THREE.Vector3(...Array(3).fill(big ? 2.4 : 1)))
-      ref.current.setMatrixAt(i, m)
-      ref.current.setColorAt(i, c.set(big ? '#ffffff' : spaceColor(s)))
-    })
-    ref.current.instanceMatrix.needsUpdate = true
-    ref.current.instanceColor.needsUpdate = true
-  }, [spots, selected])
-
+  const groups = useMemo(() => {
+    const m = {}
+    for (const s of spots) (m[pinKey(s)] ||= []).push(s)
+    return Object.entries(m)
+  }, [spots])
   return (
-    <instancedMesh
-      key={spots.length}
-      ref={ref}
-      args={[null, null, spots.length]}
-      onClick={(e) => {
-        e.stopPropagation()
-        selectSpot(spots[e.instanceId])
-      }}
-      onPointerOver={() => (document.body.style.cursor = 'pointer')}
-      onPointerOut={() => (document.body.style.cursor = '')}
-    >
-      <sphereGeometry args={[0.045, 12, 12]} />
-      <meshBasicMaterial />
-    </instancedMesh>
+    <group>
+      {groups.map(([name, list]) => (
+        <PinLayer key={name} name={name} spots={list} onPick={selectSpot} />
+      ))}
+      {selected && <PinLayer name={pinKey(selected)} spots={[selected]} size={1.55} ring="#ff7a6b" lift={0.1} top />}
+    </group>
   )
 }
 
@@ -155,7 +198,7 @@ export default function JejuMap3D({ spots, weather }) {
   const narrow = window.innerWidth < 640 // 세로로 긴 화면에서는 섬 전체가 보이게 뒤로 물러난다
 
   return (
-    <Canvas camera={{ position: narrow ? [0, 9, 12] : [0, 6, 8], fov: 45 }} onPointerMissed={() => selectSpot(null)}>
+    <Canvas camera={{ position: narrow ? [0, 9, 12] : [0, 6, 8], fov: 45 }} raycaster={{ params: { Points: { threshold: 0.07 } } }} onPointerMissed={() => selectSpot(null)}>
       <color attach="background" args={[sky]} />
       <fog attach="fog" args={[sky, 16, 34]} />
       <ambientLight intensity={night ? 0.35 : 0.8} />
@@ -165,7 +208,7 @@ export default function JejuMap3D({ spots, weather }) {
       {spots.length > 0 && <Pins spots={spots} />}
       <RoutePath />
       <SeasonPins />
-      <OrbitControls enablePan={false} minDistance={3} maxDistance={20} maxPolarAngle={Math.PI / 2.2} />
+      <OrbitControls enablePan={false} minDistance={1.2} maxDistance={20} maxPolarAngle={Math.PI / 2.2} />
     </Canvas>
   )
 }

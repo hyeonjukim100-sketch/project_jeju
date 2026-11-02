@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import Emoji from './Emoji'
+import { MongsumiFace } from './Mongsumi'
 import { KIND_EMOJI, KIND_GROUP, MOOD_LEVELS, skyOf } from '../lib/moods'
 import { introLine, suggest } from '../lib/suggest'
 import { useAppStore } from '../store/useAppStore'
@@ -26,7 +27,7 @@ export default function SuggestStrip() {
           className="chip"
           onClick={() => askAi(`오늘 ${sky.text}이고 ${Math.round(weather.temp)}도예요. 기분은 “${mood.label}”인데, 어디를 가면 좋을까요?`)}
         >
-          <i className="bi bi-chat-heart" /> AI에게 더 물어보기
+          <MongsumiFace size="2.1em" /> 몽숨이 AI에게 더 물어보기
         </button>
       </div>
       <div className="suggest-cards">
