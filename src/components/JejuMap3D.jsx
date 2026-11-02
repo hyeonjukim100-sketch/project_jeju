@@ -2,14 +2,15 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Html, Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import coast from '../data/jeju-coast.json'
 import { SEASONS, season } from '../lib/season'
 import { useAppStore } from '../store/useAppStore'
 
 // 위경도 → 장면 좌표 (제주섬 중심 126.55E, 33.38N). 한라산 근처 핀은 산비탈 높이에 얹는다.
 const K = 10
 const HALLA = [-0.17, 0.18] // 한라산 정상의 장면 좌표
-const CONE_R = 1.5
-const CONE_H = 1.4
+const CONE_R = 1.25 // 한라산 자락(실제 폭 25km 안팎)
+const CONE_H = 1.1
 export const toScene = (lng, lat) => {
   const x = (lng - 126.55) * K
   const z = -(lat - 33.38) * K
@@ -25,14 +26,34 @@ const kindColor = (kind) => KIND_COLOR[kind] || '#6BB8E0'
 const NIGHT = '#1d2a3c'
 const tone = (hex, night) => (night ? `#${new THREE.Color(hex).lerp(new THREE.Color(NIGHT), 0.62).getHexString()}` : hex)
 
+// 실제 해안선(OpenStreetMap) 윤곽을 위경도 → 장면 좌표로 옮겨 땅 모양을 만든다
+const LAND_H = 0.3
+const landShapes = coast.rings.map((ring) => {
+  const shape = new THREE.Shape()
+  ring.forEach(([lng, lat], i) => {
+    const x = (lng - 126.55) * K
+    const y = (lat - 33.38) * K // 눕히면 장면의 z = -y 가 된다
+    if (i === 0) shape.moveTo(x, y)
+    else shape.lineTo(x, y)
+  })
+  return shape
+})
+
 function Island({ land, mount }) {
+  const geos = useMemo(
+    () => landShapes.map((s) => new THREE.ExtrudeGeometry(s, { depth: LAND_H, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 3 })),
+    [],
+  )
   return (
     <group>
-      <mesh scale={[2.9, 1, 1.7]} position={[0, 0.15, 0]}>
-        <cylinderGeometry args={[1.6, 1.8, 0.3, 64]} />
-        <meshStandardMaterial color={land} flatShading />
-      </mesh>
-      <mesh position={[HALLA[0], 0.3 + CONE_H / 2, HALLA[1]]}>
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        {geos.map((g, i) => (
+          <mesh key={i} geometry={g}>
+            <meshStandardMaterial color={land} flatShading />
+          </mesh>
+        ))}
+      </group>
+      <mesh position={[HALLA[0], LAND_H + CONE_H / 2, HALLA[1]]}>
         <coneGeometry args={[CONE_R, CONE_H, 40]} />
         <meshStandardMaterial color={mount} flatShading />
       </mesh>
