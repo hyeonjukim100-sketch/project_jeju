@@ -241,6 +241,11 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
                   <Emoji name={STOP_EMOJI[s.type] || KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
                 </button>
                 <div className="small text-secondary">{s.kind}</div>
+                {s.url && (
+                  <a className="chip plan-more text-decoration-none" href={s.url} target="_blank" rel="noreferrer">
+                    카카오맵에서 보기 <i className="bi bi-box-arrow-up-right" />
+                  </a>
+                )}
                 {hasInfo?.(s) && (
                   <button type="button" className="chip plan-more" onClick={() => onOpen(s)}>
                     설명 보기 <i className="bi bi-chevron-right" />
@@ -326,6 +331,11 @@ function PlanTab({ spots }) {
                     <span className="place-name">{f.place_title}</span>
                     {f.address && <span className="small text-secondary d-block">{f.address}</span>}
                   </span>
+                  {f.place_id.startsWith('kakao:') && (
+                    <a className="chip place-link text-decoration-none" href={`https://place.map.kakao.com/${f.place_id.slice(6)}`} target="_blank" rel="noreferrer">
+                      카카오맵 <i className="bi bi-box-arrow-up-right" />
+                    </a>
+                  )}
                   <button
                     type="button"
                     className="chip"
@@ -365,7 +375,7 @@ function PlanTab({ spots }) {
           <button type="button" className="btn-soft w-100" onClick={generatePlan} disabled={planBusy}>
             {planBusy ? '동선을 만드는 중…' : recPlan.stops.length ? '다시 추천받기' : '오늘 기분에 맞는 동선 추천받기'}
           </button>
-          <p className="small text-secondary mt-2">오늘의 기분을 반영해 규칙으로 고른 하루예요. 마음에 안 들면 다시 추천받을 수 있고, 내 동선에는 영향을 주지 않아요.</p>
+          <p className="small text-secondary mt-2">오늘의 기분을 반영해 추천한 동선이에요. 마음에 안 들면 다시 추천받을 수 있고, 내 동선에는 영향을 주지 않아요.</p>
           {recPlan.stops.length === 0 ? (
             <p className="small text-secondary mb-0">아직 추천이 없어요.</p>
           ) : (

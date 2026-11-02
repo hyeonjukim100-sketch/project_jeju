@@ -4,7 +4,7 @@ import Emoji from './Emoji'
 export default function WeatherStrip({ w }) {
   if (!w) return <div className="weather-strip">날씨를 불러오는 중…</div>
   const sky = skyOf(w)
-  const moment = momentOf(w.time)
+  const moment = momentOf(w.time, w.sunset, w.sunrise)
   return (
     <div className="weather-strip">
       <div className="ws-moment">

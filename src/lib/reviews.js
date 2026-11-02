@@ -46,6 +46,18 @@ export async function saveTrip({ date, entries, stops }) {
   return data
 }
 
+// 여행 기록 고치기: 날짜와 장소별 사진·글만 바꾼다 (정리: RLS 에 update 정책 필요, supabase/step10_trip_update.sql)
+export async function updateTrip({ id, date, entries }) {
+  const { data, error } = await need().from('trips').update({ trip_date: date, entries }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+// 지워지는 옛 사진 정리 (실패해도 기록 수정은 끝난 상태)
+export async function removePhotos(paths) {
+  if (paths.length) await need().storage.from(BUCKET).remove(paths)
+}
+
 export async function listTrips() {
   const { data, error } = await need().from('trips').select('*').order('trip_date', { ascending: false }).order('created_at', { ascending: false })
   if (error) throw error

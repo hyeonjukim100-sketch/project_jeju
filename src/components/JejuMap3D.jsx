@@ -2,58 +2,141 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import coast from '../data/jeju-coast.json'
+import dem from '../data/jeju-dem.json'
 import { SEASONS, season } from '../lib/season'
 import { KIND_EMOJI, KIND_GROUP } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
 
-// 위경도 → 장면 좌표 (제주섬 중심 126.55E, 33.38N). 한라산 근처 핀은 산비탈 높이에 얹는다.
+// 지형: 공개 고도 자료(DEM, AWS Terrain Tiles/SRTM)를 격자로 줄여 두었다. 땅 높이는 이 고도를 그대로 따른다.
+// 위경도 → 장면 좌표 (제주섬 중심 126.55E, 33.38N). 위도 33도에서는 경도 1도가 위도 1도의 83% 길이라 가로를 그만큼 줄인다.
 const K = 10
-const HALLA = [-0.17, 0.18] // 한라산 정상의 장면 좌표
-const CONE_R = 1.25 // 한라산 자락(실제 폭 25km 안팎)
-const CONE_H = 1.1
-export const toScene = (lng, lat) => {
-  const x = (lng - 126.55) * K
-  const z = -(lat - 33.38) * K
-  const r = Math.hypot(x - HALLA[0], z - HALLA[1])
-  const slope = Math.max(0, CONE_H * (1 - r / CONE_R))
-  return [x, 0.32 + slope, z]
+const XS = Math.cos((33.38 * Math.PI) / 180)
+const BASE = 0.1 // 해안 땅 높이
+const EXAG = 0.00044 // 고도 1m 당 장면 높이 (실제의 약 5배로 과장)
+const SEA_Y = -0.25 // 바다 쪽 격자 점은 바닷물 아래로 내려 해안선을 만든다
+
+const demAt = (c, r) => dem.data[Math.min(dem.rows - 1, Math.max(0, r)) * dem.cols + Math.min(dem.cols - 1, Math.max(0, c))]
+const elevAt = (lng, lat) => {
+  const c = (lng - dem.lng0) / dem.dLng
+  const r = (dem.lat1 - lat) / dem.dLat
+  const c0 = Math.floor(c), r0 = Math.floor(r), fc = c - c0, fr = r - r0
+  return demAt(c0, r0) * (1 - fc) * (1 - fr) + demAt(c0 + 1, r0) * fc * (1 - fr) + demAt(c0, r0 + 1) * (1 - fc) * fr + demAt(c0 + 1, r0 + 1) * fc * fr
 }
+export const toScene = (lng, lat) => {
+  const e = elevAt(lng, lat)
+  return [(lng - 126.55) * K * XS, BASE + (e > 0 ? e * EXAG : 0) + 0.04, -(lat - 33.38) * K]
+}
+// 땅(1)/바다(0) 마스크를 상자 평균으로 흐려서, 해안선이 칸 모양 계단이 아니라 부드러운 곡선이 되게 한다
+const blur = (src, rad) => {
+  const { cols, rows } = dem
+  let a = src
+  for (let pass = 0; pass < 2; pass++) {
+    const b = new Float32Array(a.length)
+    for (let r = 0; r < rows; r++) for (let q = 0; q < cols; q++) {
+      let sum = 0, n = 0
+      for (let d = -rad; d <= rad; d++) {
+        const v = pass === 0 ? q + d : r + d
+        if (v < 0 || v >= (pass === 0 ? cols : rows)) continue
+        sum += a[pass === 0 ? r * cols + v : v * cols + q]; n++
+      }
+      b[r * cols + q] = sum / n
+    }
+    a = b
+  }
+  return a
+}
+const landMask = Float32Array.from(dem.data, (e) => (e > 0 ? 1 : 0))
+const coastM = blur(landMask, 1)
+const shelfM = blur(landMask, 4)
+const gx = (c) => (dem.lng0 + c * dem.dLng - 126.55) * K * XS
+const gz = (r) => -(dem.lat1 - r * dem.dLat - 33.38) * K
 
 // 밤에는 계절색을 어둡게 섞는다
 const NIGHT = '#1d2a3c'
 const tone = (hex, night) => (night ? `#${new THREE.Color(hex).lerp(new THREE.Color(NIGHT), 0.62).getHexString()}` : hex)
+const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 
-// 실제 해안선(OpenStreetMap) 윤곽을 위경도 → 장면 좌표로 옮겨 땅 모양을 만든다
-const LAND_H = 0.3
-const landShapes = coast.rings.map((ring) => {
-  const shape = new THREE.Shape()
-  ring.forEach(([lng, lat], i) => {
-    const x = (lng - 126.55) * K
-    const y = (lat - 33.38) * K // 눕히면 장면의 z = -y 가 된다
-    if (i === 0) shape.moveTo(x, y)
-    else shape.lineTo(x, y)
-  })
-  return shape
-})
+// 점토 느낌: 아주 약한 얼룩(범프) 무늬
+function useClayBump() {
+  return useMemo(() => {
+    const c = document.createElement('canvas')
+    c.width = c.height = 256
+    const g = c.getContext('2d')
+    const d = g.createImageData(256, 256)
+    for (let i = 0; i < d.data.length; i += 4) {
+      const v = 118 + Math.random() * 20
+      d.data[i] = d.data[i + 1] = d.data[i + 2] = v
+      d.data[i + 3] = 255
+    }
+    g.putImageData(d, 0, 0)
+    const t = new THREE.CanvasTexture(c)
+    t.wrapS = t.wrapT = THREE.RepeatWrapping
+    t.repeat.set(26, 18)
+    return t
+  }, [])
+}
 
-function Island({ land, mount }) {
-  const geos = useMemo(
-    () => landShapes.map((s) => new THREE.ExtrudeGeometry(s, { depth: LAND_H, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 3 })),
-    [],
-  )
+// 고도 격자 → 점토 지형 (해안은 낮은 땅, 한라산은 높은 흙색)
+function useTerrain(land, mount) {
+  return useMemo(() => {
+    const { cols, rows } = dem
+    const pos = new Float32Array(cols * rows * 3)
+    const col = new Float32Array(cols * rows * 3)
+    const uv = new Float32Array(cols * rows * 2)
+    const cLand = new THREE.Color(land), cMount = new THREE.Color(mount)
+    const cRock = new THREE.Color(mount).multiplyScalar(0.72), cSand = new THREE.Color(land).lerp(new THREE.Color('#fff4d6'), 0.55)
+    const c = new THREE.Color()
+    for (let r = 0; r < rows; r++) for (let q = 0; q < cols; q++) {
+      const i = r * cols + q, e = dem.data[i]
+      const top = BASE + Math.max(e, 0) * EXAG
+      pos.set([gx(q), SEA_Y + (top - SEA_Y) * sstep(0.2, 0.62, coastM[i]), gz(r)], i * 3)
+      uv.set([q / (cols - 1), r / (rows - 1)], i * 2)
+      c.copy(cLand).lerp(cMount, sstep(80, 700, e)).lerp(cRock, sstep(1250, 1800, e) * 0.8).lerp(cSand, 1 - sstep(0, 14, e))
+      col.set([c.r, c.g, c.b], i * 3)
+    }
+    const idx = []
+    for (let r = 0; r < rows - 1; r++) for (let q = 0; q < cols - 1; q++) {
+      const a = r * cols + q, b = a + 1, d = a + cols, e = d + 1
+      if (coastM[a] + coastM[b] + coastM[d] + coastM[e] === 0) continue
+      idx.push(a, d, b, b, d, e)
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3))
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+    g.setIndex(idx)
+    g.computeVertexNormals()
+    return g
+  }, [land, mount])
+}
+
+// 섬 둘레 얕은 바다 띠: 흐린 마스크가 0.3 인 곳이 바닷물 높이와 만나서 부드러운 띠 가장자리가 된다
+const shelfGeo = (() => {
+  const { cols, rows } = dem
+  const pos = new Float32Array(cols * rows * 3)
+  for (let r = 0; r < rows; r++) for (let q = 0; q < cols; q++) pos.set([gx(q), (shelfM[r * cols + q] - 0.12) * 0.1, gz(r)], (r * cols + q) * 3)
+  const idx = []
+  for (let r = 0; r < rows - 1; r++) for (let q = 0; q < cols - 1; q++) {
+    const a = r * cols + q, b = a + 1, d = a + cols, e = d + 1
+    if (shelfM[a] + shelfM[b] + shelfM[d] + shelfM[e] > 0.05) idx.push(a, d, b, b, d, e)
+  }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+  g.setIndex(idx)
+  g.computeVertexNormals()
+  return g
+})()
+
+function Island({ land, mount, shallow }) {
+  const bump = useClayBump()
+  const terrain = useTerrain(land, mount)
   return (
     <group>
-      <group rotation={[-Math.PI / 2, 0, 0]}>
-        {geos.map((g, i) => (
-          <mesh key={i} geometry={g}>
-            <meshStandardMaterial color={land} flatShading />
-          </mesh>
-        ))}
-      </group>
-      <mesh position={[HALLA[0], LAND_H + CONE_H / 2, HALLA[1]]}>
-        <coneGeometry args={[CONE_R, CONE_H, 40]} />
-        <meshStandardMaterial color={mount} flatShading />
+      <mesh geometry={shelfGeo}>
+        <meshStandardMaterial color={shallow} roughness={1} transparent opacity={0.8} />
+      </mesh>
+      <mesh geometry={terrain}>
+        <meshStandardMaterial vertexColors roughness={0.95} bumpMap={bump} bumpScale={0.5} />
       </mesh>
     </group>
   )
@@ -152,6 +235,36 @@ function Pins({ spots }) {
   )
 }
 
+// 어디가 어딘지 알 수 있게: 시(제주시·서귀포시)와 대표 지명을 지도에 글자로 붙인다. 위치는 대표 지점(시청·산·섬)이다.
+const LABELS = [
+  { t: '서귀포시', lng: 126.56, lat: 33.25, big: true },
+  { t: '제주시', lng: 126.52, lat: 33.53, big: true },
+  { t: '한라산', lng: 126.55, lat: 33.335 },
+  { t: '성산일출봉', lng: 126.94, lat: 33.458 },
+  { t: '우도', lng: 126.95, lat: 33.5 },
+  { t: '마라도', lng: 126.27, lat: 33.115 },
+  { t: '애월', lng: 126.33, lat: 33.46 },
+  { t: '협재', lng: 126.24, lat: 33.394 },
+  { t: '중문', lng: 126.41, lat: 33.25 },
+  { t: '함덕', lng: 126.67, lat: 33.543 },
+]
+function MapLabels() {
+  return (
+    <group>
+      {/* 맨 앞 하나는 화면에 그려지지 않는 일이 있어, 보이지 않는 빈 글자를 앞에 하나 둔다 */}
+      <Html position={[0, -5, 0]} style={{ pointerEvents: 'none' }}><span /></Html>
+      {LABELS.map((l) => {
+        const [x, y, z] = toScene(l.lng, l.lat)
+        return (
+          <Html key={l.t} position={[x, y + 0.35, z]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none' }}>
+            <div className={`map-label ${l.big ? 'big' : ''}`}>{l.t}</div>
+          </Html>
+        )
+      })}
+    </group>
+  )
+}
+
 // 계절 추천: 추천 목록의 번호와 같은 번호 핀 (계절 추천 탭을 보고 있을 때만)
 function SeasonPins() {
   const tab = useAppStore((s) => s.panelTab)
@@ -201,11 +314,13 @@ export default function JejuMap3D({ spots, weather }) {
     <Canvas camera={{ position: narrow ? [0, 9, 12] : [0, 6, 8], fov: 45 }} raycaster={{ params: { Points: { threshold: 0.07 } } }} onPointerMissed={() => selectSpot(null)}>
       <color attach="background" args={[sky]} />
       <fog attach="fog" args={[sky, 16, 34]} />
-      <ambientLight intensity={night ? 0.35 : 0.8} />
+      <hemisphereLight args={[sky, '#d9c9a8', night ? 0.25 : 0.55]} />
+      <ambientLight intensity={night ? 0.3 : 0.55} />
       <directionalLight position={[5, 8, 4]} intensity={night ? 0.5 : 1.4} />
       <Sea color={tone(sc.sea, night)} />
-      <Island land={tone(sc.land, night)} mount={tone(sc.mount, night)} />
+      <Island land={tone(sc.land, night)} mount={tone(sc.mount, night)} shallow={tone(new THREE.Color(sc.sea).lerp(new THREE.Color('#ffffff'), 0.35).getStyle(), night)} />
       {spots.length > 0 && <Pins spots={spots} />}
+      <MapLabels />
       <RoutePath />
       <SeasonPins />
       <OrbitControls enablePan={false} minDistance={1.2} maxDistance={20} maxPolarAngle={Math.PI / 2.2} />

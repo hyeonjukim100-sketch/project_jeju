@@ -28,19 +28,21 @@ export const KIND_GROUP = {
 }
 export const KIND_CHIPS = ['자연', '오름', '트레일', '문화', '예술', '시장', '올레코스']
 
-// 시간대 문구 (제주 현지 시각 기준)
-export const MOMENTS = [
-  [5, '아침 산책하기 좋은 시간', 'sunrise'],
-  [9, '커피 마시기 좋은 시간', 'coffee'],
-  [12, '천천히 점심 먹는 시간', 'food'],
-  [14, '쉬어가는 시간', 'herb'],
-  [16, '명상하기 좋은 시간', 'lotus'],
-  [24, '사색에 잠기기 좋은 시간', 'crescent'],
+// 시간대 문구 (제주 현지 시각 기준). 해가 진 뒤와 새벽에는 달 이모지로 사색, 그 전에는 시각대별로.
+const DAY_MOMENTS = [
+  [9, '아침 산책하기 좋은 시간', 'sunrise'],
+  [12, '커피 마시기 좋은 시간', 'coffee'],
+  [14, '천천히 점심 먹는 시간', 'food'],
+  [16, '쉬어가는 시간', 'herb'],
 ]
-export const momentOf = (timeStr) => {
-  const h = Number(String(timeStr).slice(0, 2)) // 'HH:MM'
-  const [, text, emoji] = MOMENTS.find(([end]) => h < end) || MOMENTS.at(-1)
-  return { text, emoji }
+const NIGHT_MOMENT = { text: '사색에 잠기기 좋은 시간', emoji: 'crescent' }
+const minutes = (hhmm) => Number(String(hhmm).slice(0, 2)) * 60 + Number(String(hhmm).slice(3, 5))
+export const momentOf = (timeStr, sunsetStr = '18:00', sunriseStr = '06:00') => {
+  const now = minutes(timeStr)
+  if (now >= minutes(sunsetStr) || now < minutes(sunriseStr)) return NIGHT_MOMENT // 해가 진 뒤 ~ 해뜨기 전
+  const h = Math.floor(now / 60)
+  const hit = DAY_MOMENTS.find(([end]) => h < end)
+  return hit ? { text: hit[1], emoji: hit[2] } : { text: '명상하기 좋은 시간', emoji: 'lotus' } // 16시 ~ 해질녘
 }
 
 // 서버가 주는 sky: clear | partly | cloudy | overcast | fog | rain | snow | sleet

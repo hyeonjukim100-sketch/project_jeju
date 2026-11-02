@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AuthForm from '../components/AuthForm'
 import CitrusRating from '../components/CitrusRating'
+import Emoji from '../components/Emoji'
 import { deleteReview, deleteTrip, listMyReviews, listTrips, photoUrls } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { useAppStore } from '../store/useAppStore'
@@ -33,6 +34,13 @@ function usePlaceLink() {
 
 function PlaceLink({ link, placeId, title }) {
   const spot = link.find(placeId, title)
+  if (!spot && placeId?.startsWith('kakao:')) {
+    return (
+      <a className="chip place-link text-decoration-none" href={`https://place.map.kakao.com/${placeId.slice(6)}`} target="_blank" rel="noreferrer">
+        카카오맵 <i className="bi bi-box-arrow-up-right" />
+      </a>
+    )
+  }
   if (!spot) return null
   return (
     <button type="button" className="chip place-link" onClick={() => link.open(spot)}>
@@ -75,28 +83,49 @@ function Trips({ userId }) {
     )
   }
   return (
-    <ul className="log-list">
-      {trips.map((t) => (
-        <li key={t.id} className="trip-card">
-          <div className="d-flex align-items-center gap-2 mb-2">
-            <strong className="flex-grow-1">{new Date(`${t.trip_date}T00:00:00`).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-            <button type="button" className="chip" onClick={() => remove(t)} aria-label="이 여행 기록 지우기">
-              지우기
-            </button>
-          </div>
-          <ol className="trip-read">
-            {(t.entries?.length ? t.entries : t.stops.map((s) => ({ title: s.title }))).map((e, i) => (
-              <li key={i}>
-                <div className="fw-semibold">
-                  <span className="season-no">{i + 1}</span> {e.title}
-                </div>
-                {e.photo && urls[e.photo] && <img className="trip-img" src={urls[e.photo]} alt={`${e.title} 사진`} loading="lazy" />}
-                {e.text && <p className="mb-0">{e.text}</p>}
-              </li>
-            ))}
-          </ol>
-        </li>
-      ))}
+    <ul className="diary-list">
+      {trips.map((t) => {
+        const d = new Date(`${t.trip_date}T00:00:00`)
+        const entries = t.entries?.length ? t.entries : t.stops.map((s) => ({ title: s.title }))
+        return (
+          <li key={t.id} className="diary">
+            <header className="diary-head">
+              <span className="diary-day">{d.getDate()}</span>
+              <span className="diary-when">
+                <span>{d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}</span>
+                <span>{d.toLocaleDateString('ko-KR', { weekday: 'long' })}</span>
+              </span>
+              <span className="diary-count">{entries.length}곳을 다녀왔어요</span>
+              <Link to={`/trip/new?edit=${t.id}`} className="chip text-decoration-none" aria-label="이 여행 기록 고치기">
+                수정
+              </Link>
+              <button type="button" className="chip" onClick={() => remove(t)} aria-label="이 여행 기록 지우기">
+                지우기
+              </button>
+            </header>
+            <ol className="diary-pages">
+              {entries.map((e, i) => (
+                <li key={i} className="diary-page">
+                  {i > 0 && (
+                    <div className="diary-way" aria-hidden="true">
+                      <Emoji name="footprints" size="1em" />
+                    </div>
+                  )}
+                  <div className="diary-place">
+                    <span className="season-no">{i + 1}</span> {e.title}
+                  </div>
+                  {e.photo && urls[e.photo] && (
+                    <figure className="diary-photo">
+                      <img src={urls[e.photo]} alt={`${e.title} 사진`} loading="lazy" />
+                    </figure>
+                  )}
+                  {e.text && <p className="diary-text">{e.text}</p>}
+                </li>
+              ))}
+            </ol>
+          </li>
+        )
+      })}
     </ul>
   )
 }

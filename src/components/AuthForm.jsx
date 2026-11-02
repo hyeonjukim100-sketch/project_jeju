@@ -49,7 +49,7 @@ export default function AuthForm() {
       </div>
 
       <p className="text-secondary small mb-3">
-        지도와 날씨는 로그인 없이 볼 수 있어요. 마음 기록은 로그인한 본인만 볼 수 있어요.
+        지도와 날씨는 로그인 없이 볼 수 있어요. 여행 기록은 로그인한 본인만 볼 수 있어요.
       </p>
 
       {mode === 'up' && (

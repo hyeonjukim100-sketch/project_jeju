@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import Emoji from './Emoji'
+import FavButton from './FavButton'
 import { season as nowSeason } from '../lib/season'
 import { useAppStore } from '../store/useAppStore'
 
@@ -52,20 +53,23 @@ export default function SeasonTab() {
         {(picks || []).map((p, i) => (
           <li key={p.id} className="season-item">
             <img className="season-thumb" src={p.photo} alt="" loading="lazy" />
-            <div className="flex-grow-1">
+            <div className="season-body">
               <div className="season-title">
                 <span className="season-no">{i + 1}</span> {p.title}
               </div>
-              <div className="small text-secondary">{p.address}</div>
-              {p.intro && <div className="small">{p.intro}</div>}
-              {p.tags.length > 0 && <div className="review-tags">{p.tags.map((t) => `#${t}`).join(' ')}</div>}
-              <button
-                type="button"
-                className="chip mt-1"
-                onClick={() => addStop({ type: 'spot', title: p.title, kind: '관광지', address: p.address, lat: p.lat, lng: p.lng })}
-              >
-                동선에 담기
-              </button>
+              <div className="season-addr">{p.address}</div>
+              {p.intro && <p className="season-intro">{p.intro}</p>}
+              {p.tags.length > 0 && <div className="season-tags">{p.tags.map((t) => `#${t}`).join(' ')}</div>}
+              <div className="season-actions">
+                <button
+                  type="button"
+                  className="chip"
+                  onClick={() => addStop({ type: 'spot', title: p.title, kind: '관광지', address: p.address, lat: p.lat, lng: p.lng })}
+                >
+                  동선에 담기
+                </button>
+                <FavButton placeId={p.id} title={p.title} kind="관광지" address={p.address} lat={p.lat} lng={p.lng} />
+              </div>
             </div>
           </li>
         ))}
