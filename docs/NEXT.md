@@ -3,6 +3,7 @@
 ## 내일(2026-11-03) 순서대로 할 일
 오늘 Vercel에 GitHub 저장소 import까지 끝냄. 아래를 위에서부터 차례로 진행한다.
 
+0. 먼저 확인: 버스 정류장 단위 안내가 가능한지 제주도청 공개 자료 https://www.jeju.go.kr/help/open.htm?act=view&seq=967654 부터 열어 본다 (정류소 위치·경유 노선 API 또는 데이터가 있는지). 지금 쓰는 노선 API에는 정류장 목록·좌표가 없다. 대안 후보는 국토교통부 정류소 정보 API(15098534, 제주 도시코드 포함 여부 미확인). 시연 전에 넣기 어려우면 발표에서 "정류장 단위 안내는 다음 단계"로 소개한다.
 1. Vercel 배포 마무리: 환경변수 입력(`JEJU_BUS_KEY`, Gemini/Kakao/Supabase 키 등 `.env.example` 목록 기준, 값은 채팅에 붙이지 않기), 배포 후 `/api/*` 동작 확인, Supabase Site URL·Redirect URL을 배포 주소로 추가
 2. README.md 정리 (예쁘게: 소개, 기능, 사용한 공공 API 3개+, AI 에이전트 도구 설명, 실행 방법, 배포 주소, 크레딧)
    - 크레딧: Fluent emoji MIT(버스 포함), OpenStreetMap, Open-Meteo, 기상청, Visit Jeju, 제주데이터허브 버스, AWS Terrain/SRTM, LINE Seed Sans KR OFL, Kakao, Leaflet
