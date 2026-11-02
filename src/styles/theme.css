@@ -126,7 +126,7 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .mongsumi-face { display: inline-block; vertical-align: middle; }
 .chat-fab .mongsumi-face { display: block; margin: auto; }
 .chat-panel {
-  position: fixed; right: 1.1rem; bottom: 7rem; z-index: 1500; width: min(320px, calc(100% - 2.2rem));
+  position: fixed; right: 1.1rem; bottom: 7rem; z-index: 1500; width: min(380px, calc(100% - 2.2rem));
   padding: 1rem 1.1rem; border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-soft); border: 1px solid var(--line);
 }
 .chat-head { display: flex; justify-content: space-between; align-items: center; }
@@ -495,3 +495,18 @@ p { text-wrap: pretty; }
 .bus-link { color: var(--ink); }
 .plan-bus { display: flex; justify-content: center; }
 .bus-link { justify-content: center; text-align: center; }
+
+/* 글자 위치 다듬기: 이모지·아이콘과 글자의 세로 중심, 여러 줄 글자의 줄 간격 */
+.bubble, .small, small, p { line-height: 1.6; }
+.chat-suggest .chip, .flow-opts .chip, .course-card .chip, .plan-bus .chip { line-height: 1.4; padding-block: .45rem; }
+.chip, .btn-soft, .map-switch, .photo-pick, .crisis-card a { gap: .4rem; }
+.map-switch { display: inline-flex; align-items: center; justify-content: center; }
+.map-switch i, .photo-pick i, .chip i, .btn-soft i { display: inline-flex; align-items: center; line-height: 1; }
+.chip .emoji, .btn-soft .emoji, .map-switch .emoji, .panel-title .emoji, h1 .emoji, h2 .emoji, h3 .emoji { vertical-align: middle; }
+
+/* AI 말풍선 앞의 몽숨이 얼굴: 이어지는 말풍선에서는 첫 번째에만 보인다 */
+.ai-row { display: flex; align-items: flex-start; gap: .4rem; align-self: flex-start; max-width: 100%; }
+.ai-av { flex: none; width: 1.8rem; height: 1.8rem; display: inline-flex; align-items: center; justify-content: center; }
+.ai-row .bubble { max-width: none; min-width: 0; }
+.chat-head-btns { display: flex; align-items: center; gap: .3rem; }
+.chat-head-btns .chip { min-height: 32px; padding: .1rem .7rem; }

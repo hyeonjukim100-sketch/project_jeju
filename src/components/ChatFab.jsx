@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { fetchPlan, sendChat } from '../api/client'
 import { hasCrisisSignal } from '../lib/crisis'
 import { useAppStore } from '../store/useAppStore'
@@ -33,17 +33,19 @@ const STEPS = [
     opts: ['바다·자연', '오름', '걷기 좋은 길', '시장', '예술·문화', '조용한 곳'].map((v) => ({ label: v, value: v })),
   },
 ]
-const NOTE = '대화창을 닫으면 이 대화와 추천 코스는 사라져요. 마음에 드는 코스는 내 동선에 담아 두세요.'
+const NOTE = '이 대화와 추천 코스는 저장되지 않아요. 새로고침하면 사라지니, 마음에 드는 코스는 내 동선에 담아 두세요.'
+const STOP_NOTE = '여행 계획 세우기를 멈췄어요. 지금까지 나눈 이야기는 저장되지 않고, 새로고침하면 사라져요. 필요하면 언제든 다시 시작해 주세요 🌿'
 const BUS_URL = 'https://bus.jeju.go.kr'
 const hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}` : `${m}분`)
 const MODE = { car: 'car', taxi: 'car', walk: 'walk', bus: 'bus' }
 
-const SUGGESTIONS = ['오늘 날씨에 맞는 느린 하루 코스를 추천해 주세요', '조용히 걷기 좋은 곳이 궁금해요']
+const SUGGESTIONS = ['오늘 날씨에 맞는 느린 하루 코스를 추천해 주세요', '조용히 걷기 좋은 곳이 궁금해요', '버스로 갈 수 있는 곳이 궁금해요', '지치고 힘들 때 쉬어 가기 좋은 곳이요']
 
 // 플로팅 챗: 위험 문구는 서버가 먼저 걸러 연락처 카드로 돌려준다
 export default function ChatFab() {
   const moodLevel = useAppStore((s) => s.moodLevel)
   const chatDraft = useAppStore((s) => s.chatDraft)
+  const toast = useAppStore((s) => s.toast)
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
@@ -132,7 +134,14 @@ export default function ChatFab() {
     setMessages((ms) => [...ms, { role: 'user', content: q, plan: true }, { role: 'assistant', content: '아래 보기에서 골라 주시면 코스를 더 잘 맞출 수 있어요 🌿', plan: true }])
   }
 
-  const dismissCard = (idx) => setMessages((ms) => ms.map((m, i) => (i === idx ? { ...m, dismissed: true } : m)))
+  const restart = () => {
+    setMessages([])
+    setFlow(null)
+    setText('')
+    toast('대화를 지우고 처음으로 돌아왔어요')
+  }
+
+  const dismissCard =(idx) => setMessages((ms) => ms.map((m, i) => (i === idx ? { ...m, dismissed: true } : m)))
   const step = flow && STEPS[flow.step]
 
   return (
@@ -141,9 +150,16 @@ export default function ChatFab() {
         <div className="chat-panel" role="dialog" aria-label="몽숨이 AI">
           <div className="chat-head">
             <strong>몽숨이 AI</strong>
-            <button type="button" className="chat-x" onClick={() => setOpen(false)} aria-label="닫기">
-              <i className="bi bi-x-lg" />
-            </button>
+            <div className="chat-head-btns">
+              {messages.length > 0 && !busy && (
+                <button type="button" className="chip" onClick={restart}>
+                  새로 시작
+                </button>
+              )}
+              <button type="button" className="chat-x" onClick={() => setOpen(false)} aria-label="닫기">
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
           </div>
 
           <div className="chat-log" aria-live="polite">
@@ -163,8 +179,9 @@ export default function ChatFab() {
               </>
             )}
 
-            {messages.map((m, i) => (
-              <div key={i} className={`bubble ${m.role} ${m.error ? 'err' : ''}`}>
+            {messages.map((m, i) => {
+              const bubble = (
+              <div className={`bubble ${m.role} ${m.error ? 'err' : ''}`}>
                 {m.content}
                 {m.course && <CourseCard course={m.course} />}
                 {m.crisis && !m.dismissed && (
@@ -180,7 +197,16 @@ export default function ChatFab() {
                   </div>
                 )}
               </div>
-            ))}
+              )
+              if (m.role !== 'assistant') return <Fragment key={i}>{bubble}</Fragment>
+              // 몽숨이 얼굴은 AI 말풍선이 이어질 때 맨 처음에만 붙인다
+              return (
+                <div key={i} className="ai-row">
+                  <span className="ai-av" aria-hidden="true">{messages[i - 1]?.role !== 'assistant' && <MongsumiFace size="1.8rem" />}</span>
+                  {bubble}
+                </div>
+              )
+            })}
 
             {flow && !busy && (
               <div className="chat-suggest flow-opts">
@@ -200,12 +226,20 @@ export default function ChatFab() {
                     {flow.picks.length ? '다 골랐어요' : '상관없어요'}
                   </button>
                 )}
-                <button type="button" className="chip" onClick={() => setFlow(null)}>
+                <button type="button" className="chip" onClick={() => {
+                    setFlow(null)
+                    setMessages((m) => [...m, { role: 'assistant', content: STOP_NOTE, plan: true }])
+                  }}>
                   그만할래요
                 </button>
               </div>
             )}
-            {busy && <div className="bubble assistant">생각하는 중이에요…</div>}
+            {busy && (
+              <div className="ai-row">
+                <span className="ai-av" aria-hidden="true">{messages[messages.length - 1]?.role !== 'assistant' && <MongsumiFace size="1.8rem" />}</span>
+                <div className="bubble assistant">생각하는 중이에요…</div>
+              </div>
+            )}
             <div ref={bottom} />
           </div>
 
@@ -222,7 +256,7 @@ export default function ChatFab() {
               <i className="bi bi-send-fill" />
             </button>
           </form>
-          <p className="chat-note">AI가 만든 답이라 틀릴 수 있어요. 의료·상담이 아닌 여행 추천이에요.</p>
+          <p className="chat-note">AI가 만든 답이라 틀릴 수 있어요.<br />의료·상담이 아닌 여행 추천이에요.</p>
         </div>
       )}
       <button type="button" className="chat-fab" onClick={() => setOpen((o) => !o)} aria-label={open ? '대화창 닫기' : '몽숨이 AI와 대화하기'}>
