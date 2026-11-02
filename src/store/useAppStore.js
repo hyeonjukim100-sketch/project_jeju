@@ -23,6 +23,10 @@ export const useAppStore = create(
       selectedSpot: null,
       selectSpot: (selectedSpot) => set({ selectedSpot }),
 
+      // 오늘의 기분 (0 지침 ~ 4 활기). 점수로 저장하지 않고 화면에서만 쓴다.
+      moodLevel: 2,
+      setMoodLevel: (moodLevel) => set({ moodLevel }),
+
       // 관광지·날씨 (서버 /api 에서 한 번만 불러 옴)
       spots: [],
       weather: null,

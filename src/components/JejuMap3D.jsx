@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import { SEASONS, season } from '../lib/season'
 import { useAppStore } from '../store/useAppStore'
 
 // 위경도 → 장면 좌표 (제주섬 중심 126.55E, 33.38N). 한라산 근처 핀은 산비탈 높이에 얹는다.
@@ -17,21 +18,23 @@ export const toScene = (lng, lat) => {
   return [x, 0.32 + slope, z]
 }
 
-const KIND_COLOR = { 자연: '#7ee0a1', 문화: '#ffb454' }
-const kindColor = (kind) => KIND_COLOR[kind] || '#5cc8ff'
+const KIND_COLOR = { 자연: '#6CC08F', 문화: '#F2A65A' }
+const kindColor = (kind) => KIND_COLOR[kind] || '#6BB8E0'
 
-const SKY = { day: '#bfe3f5', night: '#0b1c2e', cloudy: '#9fb4c4' }
+// 밤에는 계절색을 어둡게 섞는다
+const NIGHT = '#1d2a3c'
+const tone = (hex, night) => (night ? `#${new THREE.Color(hex).lerp(new THREE.Color(NIGHT), 0.62).getHexString()}` : hex)
 
-function Island() {
+function Island({ land, mount }) {
   return (
     <group>
       <mesh scale={[2.9, 1, 1.7]} position={[0, 0.15, 0]}>
         <cylinderGeometry args={[1.6, 1.8, 0.3, 64]} />
-        <meshStandardMaterial color="#4f9a64" flatShading />
+        <meshStandardMaterial color={land} flatShading />
       </mesh>
       <mesh position={[HALLA[0], 0.3 + CONE_H / 2, HALLA[1]]}>
         <coneGeometry args={[CONE_R, CONE_H, 40]} />
-        <meshStandardMaterial color="#6b7f5c" flatShading />
+        <meshStandardMaterial color={mount} flatShading />
       </mesh>
     </group>
   )
@@ -86,23 +89,21 @@ function Pins({ spots }) {
 
 export default function JejuMap3D({ spots, weather }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
-  const sky = useMemo(() => {
-    if (!weather) return SKY.day
-    if (!weather.isDay) return SKY.night
-    return weather.cloud > 70 ? SKY.cloudy : SKY.day
-  }, [weather])
-  const night = weather && !weather.isDay
+  const night = !!weather && !weather.isDay
+  const sc = SEASONS[season].scene
+  const sky = useMemo(() => tone(SEASONS[season].vars.bg, night), [night])
+  const narrow = window.innerWidth < 640 // 세로로 긴 화면에서는 섬 전체가 보이게 뒤로 물러난다
 
   return (
-    <Canvas camera={{ position: [0, 6, 8], fov: 45 }} onPointerMissed={() => selectSpot(null)}>
+    <Canvas camera={{ position: narrow ? [0, 9, 12] : [0, 6, 8], fov: 45 }} onPointerMissed={() => selectSpot(null)}>
       <color attach="background" args={[sky]} />
-      <fog attach="fog" args={[sky, 14, 30]} />
+      <fog attach="fog" args={[sky, 16, 34]} />
       <ambientLight intensity={night ? 0.35 : 0.8} />
       <directionalLight position={[5, 8, 4]} intensity={night ? 0.5 : 1.4} />
-      <Sea color={night ? '#0d2238' : '#3b86b8'} />
-      <Island />
+      <Sea color={tone(sc.sea, night)} />
+      <Island land={tone(sc.land, night)} mount={tone(sc.mount, night)} />
       {spots.length > 0 && <Pins spots={spots} />}
-      <OrbitControls enablePan={false} minDistance={3} maxDistance={16} maxPolarAngle={Math.PI / 2.2} />
+      <OrbitControls enablePan={false} minDistance={3} maxDistance={20} maxPolarAngle={Math.PI / 2.2} />
     </Canvas>
   )
 }
