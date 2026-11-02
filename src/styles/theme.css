@@ -257,6 +257,3 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .dot.green { background: #6CC08F; }
 .dot.other { background: #F2A65A; }
 
-/* 근처 카페: 작은 사진과 태그 */
-.nearby-thumb { flex: none; width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: var(--soft); }
-.nearby-tags { font-size: .78rem; color: var(--sub); }

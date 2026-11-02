@@ -99,7 +99,6 @@ function Nearby({ spot }) {
           {shown.map((p) => (
             <li key={p.id} className="nearby-item">
               <div className="nearby-row">
-                {p.vj?.photo && <img className="nearby-thumb" src={p.vj.photo} alt="" loading="lazy" />}
                 <div className="flex-grow-1">
                   <a href={p.url} target="_blank" rel="noreferrer">
                     {p.title}
@@ -107,7 +106,6 @@ function Nearby({ spot }) {
                   <div className="small text-secondary">
                     {p.category} · {p.distance}m
                   </div>
-                  {p.vj?.tags.length > 0 && <div className="nearby-tags">{p.vj.tags.map((t) => `#${t}`).join(' ')}</div>}
                   {rated(p) && (
                     <div className="small">
                       <CitrusRating value={rated(p).avg} size="1rem" /> {rated(p).avg.toFixed(1)} ({rated(p).count})
@@ -128,7 +126,6 @@ function Nearby({ spot }) {
           ))}
         </ul>
       )}
-      {shown.some((p) => p.vj) && <div className="small text-secondary mt-2">사진·태그는 가게가 올린 정보예요(제주관광공사 Visit Jeju). 분위기를 보증하는 말은 아니에요.</div>}
     </div>
   )
 }
