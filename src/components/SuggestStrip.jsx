@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import Emoji from './Emoji'
 import { KIND_EMOJI, KIND_GROUP, MOOD_LEVELS, skyOf } from '../lib/moods'
-import { reasonLine, suggest } from '../lib/suggest'
+import { introLine, suggest } from '../lib/suggest'
 import { useAppStore } from '../store/useAppStore'
 
 // 오늘의 제안: 날씨와 기분에 맞춘 3곳을 챗을 열기 전에 미리 보여 준다
@@ -19,7 +19,7 @@ export default function SuggestStrip() {
       <div className="suggest-head">
         <div>
           <strong>오늘의 제안</strong>
-          <span className="suggest-why">{reasonLine({ weather, sky, moodLabel: mood.label, rainy: result.rainy })}</span>
+          <span className="suggest-why">{introLine({ weather, moodLevel })}</span>
         </div>
         <button
           type="button"

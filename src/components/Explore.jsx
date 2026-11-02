@@ -15,7 +15,9 @@ import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP, MOOD_LEVELS } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
 
 const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 시각을 계산한다
-const STAY = { spot: 60, rest: 40 } // 머무는 시간(분): 구경 60, 쉬어가기 40
+const STAY = { spot: 60, meal: 60, rest: 40 } // 머무는 시간(분): 구경 60, 식사 60, 쉬어가기 40
+const STOP_LABEL = { spot: '구경', meal: '식사', rest: '쉬어가기' }
+const STOP_EMOJI = { meal: 'food', rest: 'coffee' }
 const LONG_LEG = 35 // 느린 일정: 한 구간 이동은 35분 안쪽
 const clock = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
@@ -115,7 +117,7 @@ function Nearby({ spot }) {
                   )}
                 </div>
                 <div className="nearby-ctl">
-                  <button type="button" className="chip" onClick={() => addStop({ type: 'rest', title: p.title, kind: p.category, address: p.address, lat: p.lat, lng: p.lng, url: p.url })}>
+                  <button type="button" className="chip" onClick={() => addStop({ type: cat === 'FD6' ? 'meal' : 'rest', title: p.title, kind: p.category, address: p.address, lat: p.lat, lng: p.lng, url: p.url })}>
                     담기
                   </button>
                   <button type="button" className="chip" aria-expanded={openId === p.id} onClick={() => setOpenId(openId === p.id ? null : p.id)}>
@@ -231,10 +233,10 @@ function RouteList({ stops, legs, editable, onOpen }) {
               <span className="plan-no">{i + 1}</span>
               <div className="flex-grow-1">
                 <div className="plan-time">
-                  {clock(etas[i])} · {s.type === 'rest' ? '쉬어가기' : '구경'} {STAY[s.type]}분
+                  {clock(etas[i])} · {STOP_LABEL[s.type]} {STAY[s.type]}분
                 </div>
                 <button type="button" className="plan-title" onClick={() => onOpen(s)}>
-                  <Emoji name={s.type === 'rest' ? 'coffee' : KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
+                  <Emoji name={STOP_EMOJI[s.type] || KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
                 </button>
                 <div className="small text-secondary">{s.kind}</div>
               </div>
@@ -268,7 +270,7 @@ function RouteList({ stops, legs, editable, onOpen }) {
       </ol>
       <div className="plan-sum">
         총 {stops.length}곳 · 이동 {driveTotal}분 · {clock(START_MIN)}에 시작하면 {clock(endAt)}쯤 마쳐요
-        <div className="small text-secondary">이동시간은 자동차 기준 예상이고, 머무는 시간은 구경 60분·쉬어가기 40분으로 계산했어요.</div>
+        <div className="small text-secondary">이동시간은 자동차 기준 예상이고, 머무는 시간은 구경·식사 60분, 쉬어가기 40분으로 계산했어요.</div>
       </div>
     </>
   )

@@ -190,7 +190,7 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .plan-row { display: flex; gap: .6rem; align-items: flex-start; padding: .6rem .7rem; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); }
 .plan-no, .route-badge { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--strong); color: var(--strong-ink); font-weight: 700; font-size: .85rem; box-shadow: var(--shadow-soft); border: 2px solid #fff; }
 .route-badge.rest, .plan-no { }
-.route-badge.rest { background: var(--accent); }
+.route-badge.rest, .route-badge.meal { background: var(--accent); }
 .plan-time { font-size: .78rem; color: var(--sub); }
 .plan-title { border: 0; background: transparent; padding: 0; font-weight: 700; text-align: left; color: var(--ink); min-height: 32px; }
 .plan-ctl { display: flex; flex-direction: column; gap: .2rem; }
@@ -300,3 +300,6 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
   .ws-meta { flex-wrap: nowrap; overflow-x: auto; }
   .suggest-head .chip { width: 100%; }
 }
+
+/* 날씨 띠: "명상하기 좋은 시간" 아래 시계를 글자 기준 가운데로 */
+.ws-moment > div { text-align: center; }

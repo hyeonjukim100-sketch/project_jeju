@@ -14,13 +14,13 @@ const MOOD_KINDS = [
 ]
 
 const KIND_NOTE = {
-  자연: '바다나 숲을 천천히 걷기',
-  오름: '짧게 올라 바람 맞기',
-  트레일: '걷기 좋은 길 따라가기',
-  문화: '천천히 둘러보기',
-  예술: '그림과 전시 감상하기',
-  시장: '구경하며 쉬엄쉬엄',
-  올레코스: '올레길 맛보기',
+  자연: '바다나 숲을 천천히 걸어 보세요',
+  오름: '짧게 올라 바람을 맞아 보세요',
+  트레일: '걷기 좋은 길을 따라가 보세요',
+  문화: '천천히 둘러보세요',
+  예술: '그림과 전시를 감상해 보세요',
+  시장: '구경하며 쉬엄쉬엄 걸어 보세요',
+  올레코스: '올레길을 맛보듯 걸어 보세요',
 }
 
 // 간단한 해시 → 0~1 (같은 날 같은 조건이면 같은 순서)
@@ -52,12 +52,12 @@ export function suggest({ spots, weather, moodLevel, day }) {
     if (!picked.some((p) => KIND_GROUP[p.kind] === KIND_GROUP[s.kind]) || scored.length < 6) picked.push(s)
   }
 
-  const note = (s) => (rainy ? '비를 피해 둘러보기' : KIND_NOTE[KIND_GROUP[s.kind]] || KIND_NOTE[s.kind] || '천천히 둘러보기')
+  const note = (s) => (rainy ? '비를 피해 둘러보세요' : KIND_NOTE[KIND_GROUP[s.kind]] || KIND_NOTE[s.kind] || '천천히 둘러보세요')
   return { picks: picked.map((s) => ({ spot: s, note: note(s) })), rainy }
 }
 
-// 한 줄 이유: 날씨 + 기분
-export function reasonLine({ weather, sky, moodLabel, rainy }) {
-  const w = rainy ? `${sky.text}가 와서 실내 위주로` : `${sky.text} ${Math.round(weather.temp)}°라서`
-  return `${w}, “${moodLabel}”인 오늘에 맞춰 골랐어요`
-}
+// 카드 맨 위 문장: "오늘은 날씨가 맑으며 활기가 넘치는 날이에요. 아래의 장소를 추천해요."
+const WEATHER_PHRASE = { clear: '날씨가 맑으며', partly: '구름이 조금 있으며', cloudy: '구름이 많으며', overcast: '날씨가 흐리며', fog: '안개가 끼어 있으며', rain: '비가 오며', snow: '눈이 오며', sleet: '진눈깨비가 내리며' }
+const MOOD_PHRASE = ['몸과 마음이 많이 지친', '마음이 조금 가라앉은', '그저 그런', '기분이 괜찮은', '활기가 넘치는']
+export const introLine = ({ weather, moodLevel }) =>
+  `오늘은 ${WEATHER_PHRASE[weather.sky] ?? '날씨가 흐리며'} ${MOOD_PHRASE[moodLevel] ?? MOOD_PHRASE[2]} 날이에요. 아래의 장소를 추천해요.`
