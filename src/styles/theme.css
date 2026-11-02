@@ -113,10 +113,6 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .spot-intro { margin-top: .75rem; font-size: .9rem; line-height: 1.6; white-space: pre-line; }
 
 .page-stub { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.25rem; }
-.page-stub .form-control, .page-stub .btn { border-radius: 999px; }
-.page-stub .btn-warning { background: var(--strong); border-color: transparent; color: var(--strong-ink); }
-.page-stub .btn-outline-secondary { color: var(--sub); border-color: var(--line); }
-.page-stub .list-group-item { background: var(--surface); color: var(--ink); border-color: var(--line); }
 
 /* 플로팅 챗 */
 .chat-fab {
@@ -155,3 +151,15 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .app-main { scroll-behavior: auto; }
 }
+
+/* 5단계: 가입·로그인, 내 기록 */
+.auth-card { width: min(440px, 100%); padding: 1.2rem 1.4rem; border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-soft); border: 1px solid var(--line); }
+.auth-tabs { display: flex; gap: .4rem; margin-bottom: .9rem; }
+.auth-tabs button { flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--sub); font-weight: 600; }
+.auth-tabs button.on { background: var(--strong); color: var(--strong-ink); border-color: transparent; }
+.auth-field { display: block; margin-bottom: .8rem; font-size: .9rem; font-weight: 600; }
+.auth-field input { display: block; width: 100%; margin-top: .3rem; min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); font-weight: 400; }
+.auth-error { margin-bottom: .8rem; padding: .5rem .9rem; border-radius: 16px; background: #FDE3DD; color: #7A2A1C; font-size: .9rem; }
+.btn-soft:disabled { opacity: .6; }
+.log-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+.log-item { display: flex; align-items: center; gap: .8rem; padding: .7rem 1rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); }

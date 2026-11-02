@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import ChatFab from '../components/ChatFab'
 import { NAV_ITEMS } from '../router'
@@ -5,6 +6,8 @@ import { useAppStore } from '../store/useAppStore'
 
 export default function RootLayout() {
   const toasts = useAppStore((s) => s.toasts)
+  const initAuth = useAppStore((s) => s.initAuth)
+  useEffect(() => initAuth(), [])
   const { pathname, hash } = useLocation()
   const here = pathname === '/' ? `/${hash || '#hero'}` : pathname
 
