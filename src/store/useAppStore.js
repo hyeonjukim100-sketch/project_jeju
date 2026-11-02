@@ -163,6 +163,24 @@ export const useAppStore = create((set, get) => ({
     get()._setStops(stops)
   },
   clearPlan: () => get()._setStops([]),
+  // 이동 수단: 동선의 이동시간 표시를 바꾼다 ('car' 자동차 | 'walk' 걷기 | 'bus' 버스)
+  transport: 'car',
+  setTransport: (transport) => set({ transport }),
+  // 추천 코스를 한꺼번에 담는다 (이미 있는 곳은 건너뛰고, 여섯 곳까지)
+  addStops: (list) => {
+    const stops = [...get().plan.stops]
+    let added = 0
+    for (const s of list) {
+      if (stops.length >= 6) break
+      if (stops.some((x) => x.title === s.title)) continue
+      stops.push(s)
+      added++
+    }
+    if (!added) return get().toast(stops.length >= 6 ? '느린 하루는 여섯 곳까지만 담을 수 있어요' : '이미 모두 동선에 있어요', 'warning')
+    get()._setStops(stops)
+    set({ planView: 'mine' })
+    get().toast(`${added}곳을 내 동선에 담았어요${added < list.length ? ' (나머지는 이미 있거나 자리가 없어요)' : ''}`)
+  },
   // 추천 동선은 읽기 전용으로 따로 둔다. "이 동선으로 하기"를 눌러야 내 동선으로 복사된다.
   recPlan: { stops: [], legs: [] },
   planView: 'mine', // 'mine' | 'rec'

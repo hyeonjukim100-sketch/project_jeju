@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import CrisisNotice from '../components/CrisisNotice'
 import { hasCrisisSignal } from '../lib/crisis'
@@ -18,7 +18,17 @@ export default function TripWrite() {
   const [items, setItems] = useState(() => (editId ? [] : plan.stops.map((s) => ({ title: s.title, text: '', file: null, preview: null, photo: null }))))
   const [loaded, setLoaded] = useState(!editId)
   const [busy, setBusy] = useState(false)
-  const [crisis, setCrisis] = useState(false)
+  const [warned, setWarned] = useState(false) // 위험 문구 안내를 한 번 보여 줬는지
+  const noticeRef = useRef(null)
+  const crisis = items.some((i) => hasCrisisSignal(i.text)) // 글에 위험 문구가 있으면 안내가 바로 보인다
+
+  useEffect(() => {
+    if (!crisis) setWarned(false)
+  }, [crisis])
+
+  useEffect(() => {
+    if (warned) noticeRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [warned])
 
   useEffect(() => {
     if (!editId || !user) return
@@ -81,7 +91,8 @@ export default function TripWrite() {
 
   const submit = async () => {
     if (!items.some((i) => i.text.trim() || i.file || i.photo)) return toast('사진이나 글을 하나 이상 남겨 주세요', 'warning')
-    if (items.some((i) => hasCrisisSignal(i.text))) setCrisis(true)
+    // 위험 문구가 있으면 처음 누를 때는 저장하지 않고 안내를 읽게 한다. 한 번 더 누르면 저장한다.
+    if (crisis && !warned) return setWarned(true)
     setBusy(true)
     const uploaded = []
     try {
@@ -152,10 +163,16 @@ export default function TripWrite() {
         ))}
       </ol>
 
-      {crisis && <CrisisNotice />}
+      {crisis && (
+        <div ref={noticeRef}>
+          <CrisisNotice>
+            <div className="small">{warned ? '읽어 보셨다면, 아래 버튼으로 기록을 저장할 수 있어요. 이 기록은 나만 볼 수 있어요.' : '기록은 아직 저장되지 않았어요. 천천히 읽어 보세요.'}</div>
+          </CrisisNotice>
+        </div>
+      )}
       <div className="d-flex gap-2 mt-3">
         <button type="button" className="btn-soft" onClick={submit} disabled={busy}>
-          {busy ? '저장 중…' : editId ? '고친 내용 저장하기' : '기록 저장하기'}
+          {busy ? '저장 중…' : crisis && warned ? '읽었어요, 저장할게요' : editId ? '고친 내용 저장하기' : '기록 저장하기'}
         </button>
         <Link to={editId ? '/my?tab=trips' : '/#explore'} className="chip text-decoration-none">
           돌아가기

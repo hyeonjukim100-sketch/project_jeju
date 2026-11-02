@@ -475,3 +475,12 @@ p { text-wrap: pretty; }
 @media (prefers-reduced-motion: reduce) { .detail-map { animation: none; } }
 .dm-pin { transition: transform .2s; }
 .dm-far .dm-pin:not(.sel) { transform: scale(.62); }
+
+/* 여행 계획 챗 */
+.plan-start { background: var(--strong); color: var(--strong-ink); font-weight: 600; }
+.flow-opts { margin-top: .2rem; }
+.flow-opts .chip.on { background: var(--strong); color: var(--strong-ink); }
+.course-card { margin-top: .6rem; padding: .6rem .7rem; background: var(--surface); border-radius: 14px; display: flex; flex-direction: column; gap: .5rem; white-space: normal; }
+.course-card ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.course-card .plan-title { text-align: left; }
+.course-leg { margin: .2rem 0 0 2.2rem; }

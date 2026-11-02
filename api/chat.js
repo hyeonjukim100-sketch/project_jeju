@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   if (hasCrisisSignal(last.content)) {
     return res.status(200).json({
       crisis: true,
-      reply: '많이 힘드신 것 같아요. 혼자 견디지 않으셔도 괜찮아요. 지금 바로 이야기 나눌 수 있는 곳이 있어요.',
+      reply: '지금 마음이 많이 무거우신가요? 혼자 견디지 않으셔도 괜찮아요. 따뜻하게 들어 줄 분들이 언제든 기다리고 있어요 🌿',
       contacts: CRISIS_CONTACTS,
     })
   }

@@ -25,3 +25,9 @@ export async function fetchLegs(points) {
 }
 export const fetchOlle = () => get('/api/olle')
 export const fetchSeason = (name) => get(`/api/season?name=${name}`)
+export async function fetchPlan(answers, moodLevel) {
+  const r = await fetch('/api/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ answers, moodLevel }) })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(data.error || '코스를 만들지 못했어요')
+  return data
+}

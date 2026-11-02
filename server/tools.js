@@ -1,4 +1,5 @@
 // 에이전트가 쓰는 도구. 모델에는 이름·설명·인자 모양만 보이고, 실제 실행은 여기서 한다.
+import { getBusRoutes } from './bus.js'
 import { getOlleCourses } from './olle.js'
 import { getSpots } from './tour.js'
 import { getWeather } from './weather.js'
@@ -59,6 +60,22 @@ export const TOOLS = [
     run: async ({ title } = {}) => {
       const s = (await getSpots()).find((x) => x.title === title)
       return s ? { title: s.title, kind: s.kind, address: s.address, intro: short(s.intro, 600), lat: s.lat, lng: s.lng } : { error: '그 이름의 관광지를 찾지 못했어요' }
+    },
+  },
+  {
+    name: 'search_bus_routes',
+    description:
+      '제주 버스 노선을 찾습니다. 노선 번호, 출발·종점 정류소 이름, 정류소 수, 노선 거리(km)를 줍니다. 장소별 정류소 위치나 도착 시각, 배차 간격은 알 수 없으니 지어내지 말고 제주버스정보시스템 앱에서 확인하라고 안내합니다.',
+    parameters: {
+      type: 'object',
+      properties: {
+        keyword: { type: 'string', description: '노선 번호나 출발·종점 정류소에 들어 있는 낱말 (예: 101, 공항, 서귀포)' },
+      },
+    },
+    run: async ({ keyword } = {}) => {
+      let list = await getBusRoutes()
+      if (keyword) list = list.filter((r) => `${r.number} ${r.name} ${r.from} ${r.to}`.includes(keyword))
+      return { matched: list.length, routes: list.slice(0, 8) }
     },
   },
 ]

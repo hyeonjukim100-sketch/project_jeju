@@ -19,6 +19,12 @@ const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 �
 const STAY = { spot: 60, meal: 60, rest: 40 } // 머무는 시간(분): 구경 60, 식사 60, 쉬어가기 40
 const STOP_LABEL = { spot: '구경', meal: '식사', rest: '쉬어가기' }
 const STOP_EMOJI = { meal: 'food', rest: 'coffee' }
+const LONG_WALK = 20 // 걷는 구간은 20분 안쪽이 편해요
+const TRANSPORTS = [
+  { key: 'car', label: '자동차', icon: 'bi-car-front' },
+  { key: 'walk', label: '걷기', icon: 'bi-person-walking' },
+  { key: 'bus', label: '버스', icon: 'bi-bus-front' },
+]
 const LONG_LEG = 35 // 느린 일정: 한 구간 이동은 35분 안쪽
 const clock = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
@@ -212,22 +218,31 @@ function OlleCourses() {
 
 // 동선 목록 (내 동선은 고칠 수 있고, 추천 동선은 읽기만 된다)
 function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
-  const { removeStop, moveStop } = useAppStore()
+  const { removeStop, moveStop, transport, setTransport } = useAppStore()
+  const bus = transport === 'bus'
+  const legMin = (l) => (transport === 'walk' ? l.walk ?? Math.round(l.km * 13.3) : l.minutes) // 걷기는 시속 4.5km 어림
 
   // 예상 시각: 시작 + (머문 시간 + 이동시간) 을 차례로 더한다
   const etas = useMemo(() => {
     let t = START_MIN
     return stops.map((s, i) => {
       const at = t
-      t += STAY[s.type] + (legs[i]?.minutes ?? 0)
+      t += STAY[s.type] + (legs[i] ? legMin(legs[i]) : 0)
       return at
     })
-  }, [stops, legs])
-  const driveTotal = legs.reduce((a, l) => a + l.minutes, 0)
+  }, [stops, legs, transport])
+  const driveTotal = legs.reduce((a, l) => a + legMin(l), 0)
   const endAt = stops.length ? etas.at(-1) + STAY[stops.at(-1).type] : START_MIN
 
   return (
     <>
+      <div className="kind-chips mb-2" role="group" aria-label="이동 수단">
+        {TRANSPORTS.map((t) => (
+          <button key={t.key} type="button" aria-pressed={transport === t.key} className={`chip ${transport === t.key ? 'on' : ''}`} onClick={() => setTransport(t.key)}>
+            <i className={`bi ${t.icon}`} /> {t.label}
+          </button>
+        ))}
+      </div>
       <ol className="plan-list">
         {stops.map((s, i) => (
           <li key={`${s.title}-${i}`}>
@@ -235,7 +250,7 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
               <span className="plan-no">{i + 1}</span>
               <div className="flex-grow-1">
                 <div className="plan-time">
-                  {clock(etas[i])} · {STOP_LABEL[s.type]} {STAY[s.type]}분
+                  {bus ? '' : `${clock(etas[i])} · `}{STOP_LABEL[s.type]} {STAY[s.type]}분
                 </div>
                 <button type="button" className="plan-title" onClick={() => onOpen(s)}>
                   <Emoji name={STOP_EMOJI[s.type] || KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
@@ -267,11 +282,17 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
               )}
             </div>
             {i < stops.length - 1 && (
-              <div className={`plan-leg ${legs[i]?.minutes > LONG_LEG ? 'long' : ''}`}>
+              <div className={`plan-leg ${!bus && legs[i] && legMin(legs[i]) > (transport === 'walk' ? LONG_WALK : LONG_LEG) ? 'long' : ''}`}>
                 {legs[i] ? (
-                  <>
-                    <i className="bi bi-car-front" /> 차로 약 {legs[i].minutes}분 <small>({legs[i].km}km){legs[i].minutes > LONG_LEG && ' · 조금 멀어요'}</small>
-                  </>
+                  bus ? (
+                    <>
+                      <i className="bi bi-bus-front" /> 버스로 이동 <small>({legs[i].km}km · 시간은 배차에 따라 달라요)</small>
+                    </>
+                  ) : (
+                    <>
+                      <i className={`bi ${transport === 'walk' ? 'bi-person-walking' : 'bi-car-front'}`} /> {transport === 'walk' ? '걸어서' : '차로'} 약 {legMin(legs[i])}분 <small>({legs[i].km}km){legMin(legs[i]) > (transport === 'walk' ? LONG_WALK : LONG_LEG) && ' · 조금 멀어요'}</small>
+                    </>
+                  )
                 ) : (
                   '이동시간 계산 중…'
                 )}
@@ -281,8 +302,12 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
         ))}
       </ol>
       <div className="plan-sum">
-        총 {stops.length}곳 · 이동 {driveTotal}분 · {clock(START_MIN)}에 시작하면 {clock(endAt)}쯤 마쳐요
-        <div className="small text-secondary">이동시간은 자동차 기준 예상이고, 머무는 시간은 구경·식사 60분, 쉬어가기 40분으로 계산했어요.</div>
+        {bus ? `총 ${stops.length}곳 · 버스 이동 거리 ${legs.reduce((a, l) => a + l.km, 0).toFixed(1)}km` : `총 ${stops.length}곳 · 이동 ${driveTotal}분 · ${clock(START_MIN)}에 시작하면 ${clock(endAt)}쯤 마쳐요`}
+        <div className="small text-secondary">
+          {bus
+            ? '버스는 정류소 위치와 배차 시간을 알 수 없어 거리만 보여 드려요. 정확한 도착 시각은 제주버스정보시스템 앱에서 확인해 주세요. 머무는 시간은 구경·식사 60분, 쉬어가기 40분이에요.'
+            : `이동시간은 ${transport === 'walk' ? '시속 4.5km로 걷는 것' : '자동차'} 기준 예상이고, 머무는 시간은 구경·식사 60분, 쉬어가기 40분으로 계산했어요.`}
+        </div>
       </div>
     </>
   )

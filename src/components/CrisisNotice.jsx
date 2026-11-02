@@ -4,10 +4,10 @@ import { CRISIS_CONTACTS } from '../lib/crisis'
 export default function CrisisNotice({ children }) {
   return (
     <div className="crisis-card" role="alert">
-      <div>많이 힘드신 것 같아요. 혼자 견디지 않으셔도 괜찮아요. 지금 이야기 나눌 수 있는 곳이 있어요.</div>
+      <div>지금 마음이 많이 무거우신가요? 혼자 견디지 않으셔도 괜찮아요. 따뜻하게 들어 줄 분들이 언제든 기다리고 있어요 🌿</div>
       {CRISIS_CONTACTS.map((c) => (
         <a key={c.tel} href={`tel:${c.tel.replace(/-/g, '')}`}>
-          {c.tel}({c.name})
+          📞 {c.tel}({c.name})
         </a>
       ))}
       {children}
