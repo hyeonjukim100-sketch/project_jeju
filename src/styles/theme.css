@@ -163,3 +163,19 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .btn-soft:disabled { opacity: .6; }
 .log-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
 .log-item { display: flex; align-items: center; gap: .8rem; padding: .7rem 1rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); }
+
+/* 6단계: 챗 대화 */
+.chat-panel { display: flex; flex-direction: column; max-height: min(70dvh, 560px); }
+.chat-log { flex: 1; overflow-y: auto; margin: .6rem 0; display: flex; flex-direction: column; gap: .5rem; min-height: 120px; }
+.bubble { max-width: 88%; padding: .55rem .9rem; border-radius: 18px; font-size: .92rem; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+.bubble.user { align-self: flex-end; background: var(--strong); color: var(--strong-ink); border-bottom-right-radius: 6px; }
+.bubble.assistant { align-self: flex-start; background: var(--soft); color: var(--ink); border-bottom-left-radius: 6px; }
+.bubble.err { background: #FDE3DD; color: #7A2A1C; }
+.chat-suggest { display: flex; flex-direction: column; gap: .4rem; align-items: flex-start; }
+.chat-suggest .chip { white-space: normal; text-align: left; }
+.chat-form { display: flex; gap: .4rem; }
+.chat-form input { flex: 1; min-width: 0; min-height: 44px; padding: .4rem 1rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); }
+.chat-form .btn-soft { padding: .4rem .9rem; }
+.chat-note { margin: .5rem 0 0; font-size: .72rem; color: var(--sub); text-align: center; }
+.crisis-card { margin-top: .6rem; padding: .7rem .8rem; border-radius: 14px; background: var(--surface); display: flex; flex-direction: column; gap: .4rem; align-items: flex-start; }
+.crisis-card a { font-weight: 700; color: var(--ink); text-decoration: underline; min-height: 44px; display: inline-flex; align-items: center; }

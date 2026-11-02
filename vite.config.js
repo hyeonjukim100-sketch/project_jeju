@@ -16,6 +16,15 @@ function devApi(env) {
         if (!/^[\w-]+$/.test(name) || !fs.existsSync(file)) return next()
         try {
           const mod = await server.ssrLoadModule(file)
+          if (req.method === 'POST') {
+            const chunks = []
+            for await (const c of req) chunks.push(c)
+            try {
+              req.body = JSON.parse(Buffer.concat(chunks).toString() || '{}')
+            } catch {
+              req.body = {}
+            }
+          }
           res.status = (code) => ((res.statusCode = code), res)
           res.json = (body) => {
             res.setHeader('Content-Type', 'application/json; charset=utf-8')

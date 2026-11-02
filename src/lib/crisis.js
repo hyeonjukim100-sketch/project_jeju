@@ -17,8 +17,8 @@ export function hasCrisisSignal(text = '') {
   return NEEDLES.some((n) => t.includes(n))
 }
 
+// 화면에는 "109(자살예방상담전화)" 처럼 번호와 설명을 함께 보여 준다. 번호는 발표 전에 다시 확인.
 export const CRISIS_CONTACTS = [
   { name: '자살예방상담전화', tel: '109' },
   { name: '정신건강상담전화', tel: '1577-0199' },
-  { name: '긴급 상황', tel: '119' },
 ]
