@@ -2,10 +2,58 @@ import { useEffect, useState } from 'react'
 import AuthForm from '../components/AuthForm'
 import Emoji from '../components/Emoji'
 import { MOOD_LEVELS } from '../lib/moods'
+import { deleteTrip, listTrips } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { useAppStore } from '../store/useAppStore'
 
 const labelOf = (key) => MOOD_LEVELS.find((m) => m.emoji === key)
+
+// 하루 여행 기록 목록 (본인만 보인다)
+function Trips({ userId }) {
+  const [trips, setTrips] = useState(null)
+  const toast = useAppStore((s) => s.toast)
+  useEffect(() => {
+    listTrips().then(setTrips).catch(() => setTrips([]))
+  }, [userId])
+
+  const remove = async (id) => {
+    try {
+      await deleteTrip(id)
+      setTrips((t) => t.filter((x) => x.id !== id))
+    } catch (e) {
+      toast(e.message, 'danger')
+    }
+  }
+
+  return (
+    <>
+      <h2 className="h5 mt-4">여행 기록</h2>
+      <ul className="log-list">
+        {trips && trips.length === 0 && <li className="text-secondary">아직 여행 기록이 없어요. 하루 동선을 만든 뒤 “오늘 여행 기록하기”를 눌러 보세요.</li>}
+        {(trips || []).map((t) => {
+          const m = labelOf(t.mood)
+          return (
+            <li key={t.id} className="trip-card">
+              <div className="d-flex align-items-center gap-2 mb-1">
+                {m && <Emoji name={m.emoji} size="1.8rem" />}
+                <div className="flex-grow-1">
+                  <strong>{m?.label}</strong>
+                  <div className="small text-secondary">{new Date(t.created_at).toLocaleDateString('ko-KR')}</div>
+                </div>
+                <button type="button" className="chip" onClick={() => remove(t.id)} aria-label="이 여행 기록 지우기">
+                  지우기
+                </button>
+              </div>
+              <div className="stops">{t.stops.map((s) => s.title).join(' → ')}</div>
+              {t.note && <p className="mb-1 mt-1">{t.note}</p>}
+              {t.tags?.length > 0 && <div className="review-tags">{t.tags.map((x) => `#${x}`).join(' ')}</div>}
+            </li>
+          )
+        })}
+      </ul>
+    </>
+  )
+}
 
 // 내 기록: 로그인한 본인만 자기 기록을 보고 쓴다
 export default function My() {
@@ -104,6 +152,8 @@ export default function My() {
           )
         })}
       </ul>
+
+      <Trips userId={user.id} />
     </div>
   )
 }

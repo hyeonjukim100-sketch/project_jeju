@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import JejuMap3D from './JejuMap3D'
 import WeatherStrip from './WeatherStrip'
 import Emoji from './Emoji'
+import CitrusRating from './CitrusRating'
+import ReviewBox from './ReviewBox'
+import TripRecord from './TripRecord'
 import { fetchPhotos, fetchPlaces } from '../api/client'
+import { ratingsFor } from '../lib/reviews'
+import { isSupabaseReady } from '../lib/supabase'
 import { KIND_EMOJI, MOOD_LEVELS } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
 
@@ -43,16 +48,30 @@ function Nearby({ spot }) {
   const addStop = useAppStore((s) => s.addStop)
   const [cat, setCat] = useState(null)
   const [list, setList] = useState(null)
+  const [ratings, setRatings] = useState({})
+  const [good, setGood] = useState(false) // 앱 안 리뷰 평균 3.5 이상만
+  const [openId, setOpenId] = useState(null)
   useEffect(() => {
     setCat(null)
     setList(null)
+    setRatings({})
+    setOpenId(null)
   }, [spot.id])
 
   const load = (category) => {
     setCat(category)
     setList(null)
-    fetchPlaces({ lat: spot.lat, lng: spot.lng, category }).then((r) => setList(r.places)).catch(() => setList([]))
+    setRatings({})
+    fetchPlaces({ lat: spot.lat, lng: spot.lng, category })
+      .then((r) => {
+        setList(r.places)
+        if (isSupabaseReady) ratingsFor(r.places.map((p) => `kakao:${p.id}`)).then(setRatings).catch(() => {})
+      })
+      .catch(() => setList([]))
   }
+
+  const rated = (p) => ratings[`kakao:${p.id}`]
+  const shown = list ? (good ? list.filter((p) => rated(p)?.avg >= 3.5) : list) : []
 
   return (
     <div className="nearby">
@@ -63,24 +82,45 @@ function Nearby({ spot }) {
         <button type="button" className={`chip ${cat === 'FD6' ? 'on' : ''}`} onClick={() => load('FD6')}>
           <Emoji name="food" size="1.15em" /> 근처 식당
         </button>
+        {list && list.length > 0 && (
+          <button type="button" aria-pressed={good} className={`chip ${good ? 'on' : ''}`} onClick={() => setGood((g) => !g)}>
+            <Emoji name="tangerine" size="1.15em" /> 3.5 이상만
+          </button>
+        )}
       </div>
       {cat && list === null && <div className="small text-secondary mt-2">찾는 중…</div>}
       {list && list.length === 0 && <div className="small text-secondary mt-2">가까운 곳을 찾지 못했어요</div>}
-      {list && list.length > 0 && (
+      {good && list && list.length > 0 && shown.length === 0 && (
+        <div className="small text-secondary mt-2">아직 감귤 3.5 이상인 곳이 없어요. 다녀오신 곳에 리뷰를 남겨 주세요.</div>
+      )}
+      {shown.length > 0 && (
         <ul className="nearby-list">
-          {list.map((p) => (
-            <li key={p.id}>
-              <div className="flex-grow-1">
-                <a href={p.url} target="_blank" rel="noreferrer">
-                  {p.title}
-                </a>
-                <div className="small text-secondary">
-                  {p.category} · {p.distance}m
+          {shown.map((p) => (
+            <li key={p.id} className="nearby-item">
+              <div className="nearby-row">
+                <div className="flex-grow-1">
+                  <a href={p.url} target="_blank" rel="noreferrer">
+                    {p.title}
+                  </a>
+                  <div className="small text-secondary">
+                    {p.category} · {p.distance}m
+                  </div>
+                  {rated(p) && (
+                    <div className="small">
+                      <CitrusRating value={rated(p).avg} size="1rem" /> {rated(p).avg.toFixed(1)} ({rated(p).count})
+                    </div>
+                  )}
+                </div>
+                <div className="nearby-ctl">
+                  <button type="button" className="chip" onClick={() => addStop({ type: 'rest', title: p.title, kind: p.category, address: p.address, lat: p.lat, lng: p.lng, url: p.url })}>
+                    담기
+                  </button>
+                  <button type="button" className="chip" aria-expanded={openId === p.id} onClick={() => setOpenId(openId === p.id ? null : p.id)}>
+                    리뷰
+                  </button>
                 </div>
               </div>
-              <button type="button" className="chip" onClick={() => addStop({ type: 'rest', title: p.title, kind: p.category, address: p.address, lat: p.lat, lng: p.lng, url: p.url })}>
-                담기
-              </button>
+              {openId === p.id && <ReviewBox placeId={`kakao:${p.id}`} title={p.title} />}
             </li>
           ))}
         </ul>
@@ -171,6 +211,7 @@ function PlanTab({ spots }) {
           <button type="button" className="chip" onClick={clearPlan}>
             동선 비우기
           </button>
+          <TripRecord />
         </>
       )}
     </>
@@ -232,6 +273,7 @@ export default function Explore() {
               <Gallery spot={spot} />
               <Nearby spot={spot} />
               <p className="spot-intro">{spot.intro}</p>
+              <ReviewBox placeId={spot.id} title={spot.title} />
             </>
           ) : (
             <>

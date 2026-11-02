@@ -219,3 +219,24 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
   .glass-panel.folded { max-height: 7.2rem; overflow: hidden; padding-bottom: .6rem; }
   .glass-panel.folded > :not(.sheet-toggle):not(.panel-tabs) { display: none; }
 }
+
+/* 8단계: 리뷰 · 여행 기록 */
+.citrus { display: inline-flex; gap: .1rem; align-items: center; vertical-align: middle; }
+.citrus-btn { border: 0; background: transparent; padding: 0; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.emoji.dim { filter: grayscale(1) opacity(.3); }
+.reviews { margin-top: 1rem; padding-top: .8rem; border-top: 1px solid var(--line); }
+.review-avg { display: flex; align-items: center; gap: .4rem; margin-bottom: .4rem; }
+.review-item { margin-top: .5rem; padding: .6rem .8rem; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); font-size: .9rem; }
+.review-item.mine { background: var(--soft); }
+.review-tags { color: var(--sub); font-size: .82rem; }
+.review-form, .trip-form { display: grid; gap: .3rem; margin-top: .6rem; }
+.trip-form { margin-top: .9rem; padding: .9rem; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); }
+.review-form textarea, .trip-form textarea { width: 100%; padding: .6rem .9rem; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); resize: vertical; }
+.tag-add { display: flex; gap: .4rem; margin-top: .4rem; }
+.tag-add input { flex: 1; min-width: 0; min-height: 44px; padding: .3rem 1rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); }
+.tag-err { color: #9A4A2C; margin-top: .3rem; }
+.nearby-item { flex-direction: column; align-items: stretch !important; }
+.nearby-row { display: flex; align-items: center; gap: .6rem; }
+.nearby-ctl { display: flex; flex-direction: column; gap: .25rem; }
+.trip-card { padding: .8rem 1rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); }
+.trip-card .stops { font-size: .85rem; color: var(--sub); }
