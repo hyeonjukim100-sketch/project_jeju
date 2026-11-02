@@ -30,7 +30,7 @@ export default function Home() {
       <section id="hero" className="hero">
         <div className="hero-text">
           <h1>오늘 기분은 어떠세요?</h1>
-          <p>편안한 하루 보내고 계신가요? 슬라이더를 움직여 알려 주세요.</p>
+          <p>편안한 하루 보내고 계신가요? 아래 동그란 점을 좌우로 밀어 지금 기분을 알려 주세요.</p>
         </div>
         <MoodSlider onDone={goExplore} />
         <CharacterStone />

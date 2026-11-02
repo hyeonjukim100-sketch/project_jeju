@@ -86,9 +86,11 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 }
 .ws-moment { display: flex; align-items: center; gap: .6rem; }
 .ws-title { font-weight: 700; font-size: 1.05rem; }
-.ws-sub, .ws-sky small { color: var(--sub); font-size: .8rem; }
+.ws-sub { color: var(--sub); font-size: 1rem; font-weight: 600; }
+.ws-sky small { color: var(--sub); font-size: .8rem; }
 .ws-sky { display: flex; align-items: center; gap: .4rem; font-weight: 600; }
-.ws-meta { display: flex; flex-wrap: wrap; gap: .1rem .9rem; color: var(--sub); font-size: .82rem; margin-left: auto; }
+.ws-meta { display: flex; flex-wrap: wrap; gap: .2rem .9rem; color: var(--ink); font-size: .88rem; margin-left: auto; }
+.ws-meta span { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
 
 .map-stage { position: relative; flex: 1; min-height: 0; }
 .map-stage canvas { position: absolute; inset: 0; }
@@ -208,8 +210,7 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
   .glass-panel { padding-bottom: 5rem; }
   .glass-panel.tall { max-height: 66%; }
   .weather-strip { padding: .45rem 1rem; gap: .2rem 1rem; }
-  .ws-sub { display: none; }
-  .ws-meta span:not(:first-child) { display: none; }
+  .ws-meta { font-size: .8rem; gap: .1rem .7rem; }
   .chat-fab { width: 52px; height: 52px; right: .8rem; }
 }
 
@@ -263,3 +264,39 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .olle-pin { display: inline-block; min-width: 2.6rem; margin-right: .4rem; padding: .05rem .6rem; border-radius: 999px; background: var(--strong); color: var(--strong-ink); font-size: .75rem; font-weight: 700; text-align: center; }
 .olle-pin.end { background: var(--accent); color: var(--ink); }
 .olle-item.on .olle-no { color: inherit; }
+
+/* 하루 동선 안의 작은 탭: 내 동선 / 추천 동선 */
+.sub-tabs { display: flex; gap: .4rem; margin: 0 0 .8rem; padding: .25rem; border-radius: 999px; background: var(--soft); }
+.sub-tabs button { flex: 1; min-height: 40px; border: 0; border-radius: 999px; background: transparent; color: var(--sub); font-weight: 600; font-size: .92rem; }
+.sub-tabs button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-soft); }
+
+/* 오늘의 제안 */
+.suggest { padding: .6rem 1.25rem .7rem; background: var(--soft); border-bottom: 1px solid var(--line); }
+.suggest-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .3rem .8rem; margin-bottom: .45rem; }
+.suggest-why { margin-left: .6rem; color: var(--sub); font-size: .82rem; }
+.suggest-cards { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .15rem; }
+.suggest-card { flex: 1 1 0; min-width: 190px; display: flex; align-items: center; gap: .6rem; min-height: 56px; padding: .45rem .8rem; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-soft); }
+.suggest-card:hover { background: var(--bg); }
+.suggest-title { display: block; font-weight: 700; font-size: .92rem; line-height: 1.25; }
+.suggest-note { display: block; color: var(--sub); font-size: .78rem; }
+@media (max-width: 640px) {
+  .suggest { padding: .45rem 1rem .5rem; }
+  .suggest-why { display: block; margin-left: 0; }
+  .suggest-card { flex: none; min-width: 168px; }
+}
+
+/* 계절 추천 */
+.route-badge.season { background: var(--accent); color: var(--ink); }
+.season-list { list-style: none; padding: 0; margin: .6rem 0 0; display: grid; gap: .5rem; }
+.season-item { display: flex; gap: .7rem; padding: .6rem; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); }
+.season-thumb { flex: none; width: 72px; height: 72px; border-radius: 14px; object-fit: cover; background: var(--soft); }
+.season-title { font-weight: 700; }
+.season-no { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; margin-right: .2rem; border-radius: 50%; background: var(--accent); font-size: .78rem; }
+
+/* 모바일: 날씨·제안 띠 아래로 지도가 충분한 높이로 이어진다 (화면보다 길어지면 스크롤) */
+@media (max-width: 640px) {
+  .explore { height: auto; min-height: 0; }
+  .map-stage { flex: none; height: calc(100dvh - var(--nav-h) - 3rem); min-height: 440px; }
+  .ws-meta { flex-wrap: nowrap; overflow-x: auto; }
+  .suggest-head .chip { width: 100%; }
+}

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
-import { fetchLegs, fetchOlle, fetchRoute, fetchSpots, fetchWeather } from '../api/client'
+import { fetchLegs, fetchOlle, fetchRoute, fetchSeason, fetchSpots, fetchWeather } from '../api/client'
 import { spaceOf } from '../lib/space'
 
 // 로그인 오류를 읽기 쉬운 문장으로
@@ -27,6 +27,10 @@ export const useAppStore = create((set, get) => ({
   // 3D 지도에서 선택한 장소 (지도·동선·에이전트가 같이 봄)
   selectedSpot: null,
   selectSpot: (selectedSpot) => set({ selectedSpot }),
+
+  // 챗 열기: 제안 카드의 "AI에게 더 물어보기" 가 질문을 미리 채워 챗을 연다 (자동으로 보내지는 않는다)
+  chatDraft: null,
+  askAi: (text) => set({ chatDraft: { text, at: Date.now() } }),
 
   // 오늘의 기분 (0 지침 ~ 4 활기). 점수로 저장하지 않고 화면에서만 쓴다.
   moodLevel: 2,
@@ -98,7 +102,20 @@ export const useAppStore = create((set, get) => ({
     }
   },
   selectOlle: (selectedOlle) => set({ selectedOlle }),
-  panelTab: 'places', // 'places' | 'plan'
+  // 계절 추천: 계절별(봄·여름·가을·겨울)과 "비·눈 오는 날"(rainy) 추천 12곳을 한 번씩 불러 둔다
+  seasonName: null, // 고른 칩. 처음 열 때 지금 계절(비·눈이 오면 rainy)로 정한다
+  seasonPicks: {},
+  setSeasonName: (seasonName) => set({ seasonName }),
+  loadSeason: async (name) => {
+    if (get().seasonPicks[name]) return
+    try {
+      const { picks } = await fetchSeason(name)
+      set({ seasonPicks: { ...get().seasonPicks, [name]: picks } })
+    } catch {
+      get().toast('추천을 불러오지 못했어요', 'danger')
+    }
+  },
+  panelTab: 'places', // 'places' | 'plan' | 'season'
   setPanelTab: (panelTab) => set({ panelTab }),
   _setStops: async (stops) => {
     const token = (get()._legToken = (get()._legToken || 0) + 1)
@@ -127,16 +144,27 @@ export const useAppStore = create((set, get) => ({
     get()._setStops(stops)
   },
   clearPlan: () => get()._setStops([]),
+  // 추천 동선은 읽기 전용으로 따로 둔다. "이 동선으로 하기"를 눌러야 내 동선으로 복사된다.
+  recPlan: { stops: [], legs: [] },
+  planView: 'mine', // 'mine' | 'rec'
+  setPlanView: (planView) => set({ planView }),
   generatePlan: async () => {
     set({ planBusy: true })
     try {
       const { stops, legs } = await fetchRoute(get().moodLevel)
-      set({ plan: { stops, legs }, panelTab: 'plan' })
+      set({ recPlan: { stops, legs }, planView: 'rec', panelTab: 'plan' })
     } catch (e) {
       get().toast('동선을 만들지 못했어요. 잠시 후 다시 시도해 주세요', 'danger')
     } finally {
       set({ planBusy: false })
     }
+  },
+  adoptRecPlan: () => {
+    const { stops, legs } = get().recPlan
+    if (!stops.length) return
+    get()._legToken = (get()._legToken || 0) + 1 // 진행 중인 이동시간 계산이 덮어쓰지 않게
+    set({ plan: { stops: stops.map((s) => ({ ...s })), legs: [...legs] }, planView: 'mine' })
+    get().toast('추천 동선을 내 동선으로 가져왔어요')
   },
 
   // 마음 기록 — 본인 것만 (Supabase RLS 가 막아 준다). mood 칸에는 이모지 이름만 저장한다.

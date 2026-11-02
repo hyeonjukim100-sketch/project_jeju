@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import JejuMap3D from './JejuMap3D'
+import SeasonTab from './SeasonTab'
+import SuggestStrip from './SuggestStrip'
 import WeatherStrip from './WeatherStrip'
 import Emoji from './Emoji'
 import CitrusRating from './CitrusRating'
@@ -9,7 +11,7 @@ import { fetchPhotos, fetchPlaces } from '../api/client'
 import { SPACE_LABEL } from '../lib/space'
 import { ratingsFor } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
-import { KIND_EMOJI, MOOD_LEVELS } from '../lib/moods'
+import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP, MOOD_LEVELS } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
 
 const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 시각을 계산한다
@@ -204,9 +206,9 @@ function OlleCourses() {
   )
 }
 
-function PlanTab({ spots }) {
-  const { plan, planBusy, generatePlan, removeStop, moveStop, clearPlan, selectSpot, setPanelTab } = useAppStore()
-  const { stops, legs } = plan
+// 동선 목록 (내 동선은 고칠 수 있고, 추천 동선은 읽기만 된다)
+function RouteList({ stops, legs, editable, onOpen }) {
+  const { removeStop, moveStop } = useAppStore()
 
   // 예상 시각: 시작 + (머문 시간 + 이동시간) 을 차례로 더한다
   const etas = useMemo(() => {
@@ -220,6 +222,61 @@ function PlanTab({ spots }) {
   const driveTotal = legs.reduce((a, l) => a + l.minutes, 0)
   const endAt = stops.length ? etas.at(-1) + STAY[stops.at(-1).type] : START_MIN
 
+  return (
+    <>
+      <ol className="plan-list">
+        {stops.map((s, i) => (
+          <li key={`${s.title}-${i}`}>
+            <div className="plan-row">
+              <span className="plan-no">{i + 1}</span>
+              <div className="flex-grow-1">
+                <div className="plan-time">
+                  {clock(etas[i])} · {s.type === 'rest' ? '쉬어가기' : '구경'} {STAY[s.type]}분
+                </div>
+                <button type="button" className="plan-title" onClick={() => onOpen(s)}>
+                  <Emoji name={s.type === 'rest' ? 'coffee' : KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
+                </button>
+                <div className="small text-secondary">{s.kind}</div>
+              </div>
+              {editable && (
+                <div className="plan-ctl">
+                  <button type="button" className="chip" onClick={() => moveStop(i, -1)} aria-label="위로" disabled={i === 0}>
+                    <i className="bi bi-arrow-up" />
+                  </button>
+                  <button type="button" className="chip" onClick={() => moveStop(i, 1)} aria-label="아래로" disabled={i === stops.length - 1}>
+                    <i className="bi bi-arrow-down" />
+                  </button>
+                  <button type="button" className="chip" onClick={() => removeStop(i)} aria-label="동선에서 빼기">
+                    <i className="bi bi-x-lg" />
+                  </button>
+                </div>
+              )}
+            </div>
+            {i < stops.length - 1 && (
+              <div className={`plan-leg ${legs[i]?.minutes > LONG_LEG ? 'long' : ''}`}>
+                {legs[i] ? (
+                  <>
+                    <i className="bi bi-car-front" /> 차로 약 {legs[i].minutes}분 <small>({legs[i].km}km){legs[i].minutes > LONG_LEG && ' · 조금 멀어요'}</small>
+                  </>
+                ) : (
+                  '이동시간 계산 중…'
+                )}
+              </div>
+            )}
+          </li>
+        ))}
+      </ol>
+      <div className="plan-sum">
+        총 {stops.length}곳 · 이동 {driveTotal}분 · {clock(START_MIN)}에 시작하면 {clock(endAt)}쯤 마쳐요
+        <div className="small text-secondary">이동시간은 자동차 기준 예상이고, 머무는 시간은 구경 60분·쉬어가기 40분으로 계산했어요.</div>
+      </div>
+    </>
+  )
+}
+
+function PlanTab({ spots }) {
+  const { plan, recPlan, planView, setPlanView, planBusy, generatePlan, adoptRecPlan, clearPlan, selectSpot, setPanelTab } = useAppStore()
+
   const open = (s) => {
     const spot = spots.find((x) => x.title === s.title)
     if (spot) {
@@ -230,68 +287,54 @@ function PlanTab({ spots }) {
 
   return (
     <>
-      <button type="button" className="btn-soft w-100" onClick={generatePlan} disabled={planBusy}>
-        {planBusy ? '동선을 만드는 중…' : stops.length ? '다시 만들기' : '오늘 기분에 맞는 하루 동선 만들기'}
-      </button>
-      <p className="small text-secondary mt-2">핀을 눌러 “동선에 담기”로 직접 짤 수도 있어요. 규칙으로 고른 추천이라 마음에 안 들면 다시 만들어 보세요.</p>
+      <div className="sub-tabs" role="tablist" aria-label="동선 보기">
+        <button type="button" role="tab" aria-selected={planView === 'mine'} className={planView === 'mine' ? 'on' : ''} onClick={() => setPlanView('mine')}>
+          내 동선{plan.stops.length > 0 && ` ${plan.stops.length}`}
+        </button>
+        <button type="button" role="tab" aria-selected={planView === 'rec'} className={planView === 'rec' ? 'on' : ''} onClick={() => setPlanView('rec')}>
+          추천 동선{recPlan.stops.length > 0 && ` ${recPlan.stops.length}`}
+        </button>
+      </div>
 
-      {stops.length === 0 ? (
-        <p className="small text-secondary mb-0">아직 비어 있어요.</p>
+      {planView === 'mine' ? (
+        <>
+          {plan.stops.length === 0 ? (
+            <p className="small text-secondary">
+              아직 비어 있어요. 장소에서 “동선에 담기”를 누르거나, “추천 동선”에서 마음에 드는 하루를 가져와 보세요.
+            </p>
+          ) : (
+            <>
+              <RouteList stops={plan.stops} legs={plan.legs} editable onOpen={open} />
+              <button type="button" className="chip" onClick={clearPlan}>
+                동선 비우기
+              </button>
+              <TripRecord />
+            </>
+          )}
+        </>
       ) : (
         <>
-          <ol className="plan-list">
-            {stops.map((s, i) => (
-              <li key={`${s.title}-${i}`}>
-                <div className="plan-row">
-                  <span className="plan-no">{i + 1}</span>
-                  <div className="flex-grow-1">
-                    <div className="plan-time">
-                      {clock(etas[i])} · {s.type === 'rest' ? '쉬어가기' : '구경'} {STAY[s.type]}분
-                    </div>
-                    <button type="button" className="plan-title" onClick={() => open(s)}>
-                      <Emoji name={s.type === 'rest' ? 'coffee' : KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
-                    </button>
-                    <div className="small text-secondary">{s.kind}</div>
-                  </div>
-                  <div className="plan-ctl">
-                    <button type="button" className="chip" onClick={() => moveStop(i, -1)} aria-label="위로" disabled={i === 0}>
-                      <i className="bi bi-arrow-up" />
-                    </button>
-                    <button type="button" className="chip" onClick={() => moveStop(i, 1)} aria-label="아래로" disabled={i === stops.length - 1}>
-                      <i className="bi bi-arrow-down" />
-                    </button>
-                    <button type="button" className="chip" onClick={() => removeStop(i)} aria-label="동선에서 빼기">
-                      <i className="bi bi-x-lg" />
-                    </button>
-                  </div>
-                </div>
-                {i < stops.length - 1 && (
-                  <div className={`plan-leg ${legs[i]?.minutes > LONG_LEG ? 'long' : ''}`}>
-                    {legs[i] ? (
-                      <>
-                        <i className="bi bi-car-front" /> 차로 약 {legs[i].minutes}분 <small>({legs[i].km}km){legs[i].minutes > LONG_LEG && ' · 조금 멀어요'}</small>
-                      </>
-                    ) : (
-                      '이동시간 계산 중…'
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ol>
-          <div className="plan-sum">
-            총 {stops.length}곳 · 이동 {driveTotal}분 · {clock(START_MIN)}에 시작하면 {clock(endAt)}쯤 마쳐요
-            <div className="small text-secondary">이동시간은 자동차 기준 예상이고, 머무는 시간은 구경 60분·쉬어가기 40분으로 계산했어요.</div>
-          </div>
-          <button type="button" className="chip" onClick={clearPlan}>
-            동선 비우기
+          <button type="button" className="btn-soft w-100" onClick={generatePlan} disabled={planBusy}>
+            {planBusy ? '동선을 만드는 중…' : recPlan.stops.length ? '다시 추천받기' : '오늘 기분에 맞는 동선 추천받기'}
           </button>
-          <TripRecord />
+          <p className="small text-secondary mt-2">슬라이더로 고른 기분에 맞춰 규칙으로 고른 하루예요. 마음에 안 들면 다시 추천받을 수 있고, 내 동선에는 영향을 주지 않아요.</p>
+          {recPlan.stops.length === 0 ? (
+            <p className="small text-secondary mb-0">아직 추천이 없어요.</p>
+          ) : (
+            <>
+              <RouteList stops={recPlan.stops} legs={recPlan.legs} onOpen={open} />
+              <button type="button" className="btn-soft w-100" onClick={adoptRecPlan}>
+                {plan.stops.length > 0 ? '내 동선을 이 추천으로 바꾸기' : '이 동선으로 하기'}
+              </button>
+              {plan.stops.length > 0 && <p className="small text-secondary mt-2 mb-0">지금 내 동선({plan.stops.length}곳)은 이 추천으로 바뀌어요.</p>}
+            </>
+          )}
         </>
       )}
     </>
   )
 }
+
 
 // 스크롤하면 나오는 화면: 날씨 → 3D 지도 + 하루 동선
 export default function Explore() {
@@ -304,24 +347,22 @@ export default function Explore() {
     loadWeather()
   }, [])
 
-  const kinds = useMemo(() => ['전체', '푸른 공간', '초록 공간', '사진 있는 곳', ...new Set(spots.map((s) => s.kind).filter(Boolean))], [spots])
+  const kinds = ['전체', '푸른 공간', '초록 공간', ...KIND_CHIPS]
   const shown = useMemo(() => {
-    // 관광지 데이터의 "제주올레 11코스" 핀이 우도(1-1코스와 같은 주소)에 찍혀 있다. 실제 11코스는 모슬포~무릉이라 틀린 위치여서 모든 보기에서 뺀다.
-    const ok = spots.filter((s) => s.title !== '제주올레 11코스')
-    if (kind === '전체') return ok
-    if (kind === '사진 있는 곳') return ok.filter((s) => s.tourId)
-    if (kind === '푸른 공간') return ok.filter((s) => s.space === 'blue')
-    if (kind === '초록 공간') return ok.filter((s) => s.space === 'green')
-    return ok.filter((s) => s.kind === kind)
+    if (kind === '전체') return spots
+    if (kind === '푸른 공간') return spots.filter((s) => s.space === 'blue')
+    if (kind === '초록 공간') return spots.filter((s) => s.space === 'green')
+    return spots.filter((s) => KIND_GROUP[s.kind] === kind)
   }, [spots, kind])
   const mood = MOOD_LEVELS[moodLevel]
 
   return (
     <section id="explore" className="explore">
       <WeatherStrip w={weather} />
+      <SuggestStrip />
       <div className="map-stage">
         <JejuMap3D spots={shown} weather={weather} />
-        <aside className={`glass-panel ${panelTab === 'plan' || spot ? 'tall' : ''} ${folded ? 'folded' : ''}`}>
+        <aside className={`glass-panel ${panelTab === 'plan' || panelTab === 'season' || spot ? 'tall' : ''} ${folded ? 'folded' : ''}`}>
           <button type="button" className="sheet-toggle" onClick={() => setFolded((f) => !f)} aria-expanded={!folded} aria-label={folded ? '패널 펼치기' : '패널 접고 지도 보기'}>
             <i className={`bi bi-chevron-${folded ? 'up' : 'down'}`} /> {folded ? '펼치기' : '지도 보기'}
           </button>
@@ -332,9 +373,14 @@ export default function Explore() {
             <button type="button" role="tab" aria-selected={panelTab === 'plan'} className={panelTab === 'plan' ? 'on' : ''} onClick={() => setPanelTab('plan')}>
               하루 동선{plan.stops.length > 0 && ` ${plan.stops.length}`}
             </button>
+            <button type="button" role="tab" aria-selected={panelTab === 'season'} className={panelTab === 'season' ? 'on' : ''} onClick={() => setPanelTab('season')}>
+              계절 추천
+            </button>
           </div>
 
-          {panelTab === 'plan' ? (
+          {panelTab === 'season' ? (
+            <SeasonTab />
+          ) : panelTab === 'plan' ? (
             <PlanTab spots={spots} />
           ) : spot ? (
             <>

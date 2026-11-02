@@ -48,9 +48,10 @@
 | 관광지 소개·좌표 | 제주 관내 관광지 데이터 (odcloud) |
 | 관광지 사진 | 한국관광공사 TourAPI(KorService2) |
 | 올레길 | 올레코스 API 카드 (장소 탭의 올레코스 칩 안, 지도 선은 OSM 12개 코스뿐이라 꺼 둠: src/components/OlleLines.jsx) |
-| 관광지 사진(TourAPI에 없을 때) | Visit Jeju API (제주관광공사) |
+| 관광지 사진(TourAPI에 없을 때), 계절 추천(계절 태그·이름 규칙) | Visit Jeju API (제주관광공사) |
 | 올레길 | 제주 올레코스 현황 (odcloud) |
-| 날씨·공기·일출일몰 | Open-Meteo |
+| 현재 날씨(기온·하늘·바람) | 기상청 초단기실황·초단기예보 (공공데이터포털, 제주시 격자) |
+| 공기·일출·일몰·자외선 | Open-Meteo (공기는 모델 추정, 출처 표기 필요) |
 | 맛집·카페 | 카카오 로컬 |
 | 에이전트 | Anthropic API |
 | 저장·계정 | Supabase |

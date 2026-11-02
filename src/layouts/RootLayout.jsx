@@ -32,7 +32,7 @@ export default function RootLayout() {
 
       <footer className="app-notice">
         이 앱은 의료·상담이 아닌 여행 추천입니다. 힘든 마음이 계속되면 109(자살예방상담전화) · 1577-0199(정신건강상담전화)
-        <span className="credit"> · 섬 윤곽 © OpenStreetMap contributors</span>
+        <span className="credit"> · 날씨 기상청 · 공기·일출·자외선 Open-Meteo · 섬 윤곽 © OpenStreetMap contributors</span>
       </footer>
 
       <ChatFab />

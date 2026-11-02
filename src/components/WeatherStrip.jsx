@@ -1,4 +1,4 @@
-import { airText, momentOf, skyOf } from '../lib/moods'
+import { airText, momentOf, skyOf, uvText } from '../lib/moods'
 import Emoji from './Emoji'
 
 export default function WeatherStrip({ w }) {
@@ -11,7 +11,7 @@ export default function WeatherStrip({ w }) {
         <Emoji name={moment.emoji} size="2.2rem" />
         <div>
           <div className="ws-title">{moment.text}</div>
-          <div className="ws-sub">지금 제주 · {w.time.slice(11)}</div>
+          <div className="ws-sub">{w.time}</div>
         </div>
       </div>
       <div className="ws-sky">
@@ -21,11 +21,20 @@ export default function WeatherStrip({ w }) {
         </span>
       </div>
       <div className="ws-meta">
-        <span>{airText(w.pm25)}</span>
+        {w.pm25 != null && (
+          <span>
+            <Emoji name="wind" size="1.25em" /> {airText(w.pm25)}
+          </span>
+        )}
         <span>
-          일출 {w.sunrise.slice(11)} · 일몰 {w.sunset.slice(11)}
+          <Emoji name="sunrise" size="1.25em" /> 일출 {w.sunrise}
         </span>
-        <span>자외선 최대 {Math.round(w.uvMax)}</span>
+        <span>
+          <Emoji name="sunset" size="1.25em" /> 일몰 {w.sunset}
+        </span>
+        <span>
+          <Emoji name="sunglasses" size="1.25em" /> {uvText(w.uvMax)}
+        </span>
       </div>
     </div>
   )

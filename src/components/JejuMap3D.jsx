@@ -109,9 +109,30 @@ function Pins({ spots }) {
   )
 }
 
+// 계절 추천: 추천 목록의 번호와 같은 번호 핀 (계절 추천 탭을 보고 있을 때만)
+function SeasonPins() {
+  const tab = useAppStore((s) => s.panelTab)
+  const name = useAppStore((s) => s.seasonName)
+  const picks = useAppStore((s) => (s.seasonName ? s.seasonPicks[s.seasonName] : null))
+  if (tab !== 'season' || !name || !picks) return null
+  return (
+    <group>
+      {picks.map((p, i) => {
+        const [x, y, z] = toScene(p.lng, p.lat)
+        return (
+          <Html key={p.id} position={[x, y + 0.3, z]} center zIndexRange={[5, 0]}>
+            <div className="route-badge season">{i + 1}</div>
+          </Html>
+        )
+      })}
+    </group>
+  )
+}
+
 // 하루 동선: 번호 핀과 이어 주는 선
 function RoutePath() {
-  const stops = useAppStore((s) => s.plan.stops)
+  // 추천 동선을 보고 있을 때는 추천을, 아니면 내 동선을 지도에 그린다
+  const stops = useAppStore((s) => (s.panelTab === 'plan' && s.planView === 'rec' ? s.recPlan.stops : s.plan.stops))
   const pts = useMemo(() => stops.map((s) => toScene(s.lng, s.lat)), [stops])
   if (!pts.length) return null
   return (
@@ -143,6 +164,7 @@ export default function JejuMap3D({ spots, weather }) {
       <Island land={tone(sc.land, night)} mount={tone(sc.mount, night)} />
       {spots.length > 0 && <Pins spots={spots} />}
       <RoutePath />
+      <SeasonPins />
       <OrbitControls enablePan={false} minDistance={3} maxDistance={20} maxPolarAngle={Math.PI / 2.2} />
     </Canvas>
   )

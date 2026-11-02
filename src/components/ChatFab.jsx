@@ -7,6 +7,7 @@ const SUGGESTIONS = ['오늘 날씨에 맞는 느린 하루 코스를 추천해 
 // 플로팅 챗: 위험 문구는 서버가 먼저 걸러 연락처 카드로 돌려준다
 export default function ChatFab() {
   const moodLevel = useAppStore((s) => s.moodLevel)
+  const chatDraft = useAppStore((s) => s.chatDraft)
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
@@ -16,6 +17,13 @@ export default function ChatFab() {
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: 'end' })
   }, [messages, busy, open])
+
+  // 오늘의 제안 카드에서 온 질문: 챗을 열고 입력칸에 채워 둔다
+  useEffect(() => {
+    if (!chatDraft) return
+    setOpen(true)
+    setText(chatDraft.text)
+  }, [chatDraft])
 
   const send = async (content) => {
     const q = content.trim()

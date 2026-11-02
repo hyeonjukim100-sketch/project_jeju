@@ -24,3 +24,4 @@ export async function fetchLegs(points) {
   return (await r.json()).legs
 }
 export const fetchOlle = () => get('/api/olle')
+export const fetchSeason = (name) => get(`/api/season?name=${name}`)

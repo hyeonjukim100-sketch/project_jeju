@@ -29,6 +29,12 @@ async function fetchAll(path) {
 let cache = null // { at, spots }
 const TTL = 6 * 60 * 60 * 1000
 
+// 여행지로 보여 주지 않을 것: 병원류(의료), 날짜 정보가 없는 축제·행사, 기타 중 학교·여객선·병의원 같은 시설,
+// 그리고 관광지 데이터에서 위치가 잘못 찍힌 "제주올레 11코스"(우도에 찍혀 있으나 실제 11코스는 모슬포~무릉)
+const HIDDEN_KINDS = ['의료', '축제', '축제/행사']
+const NOT_TRAVEL = /초등학교|분교|여객선|의원|병원|치과|한의원|피부과|약국/
+const isTravel = (s) => !HIDDEN_KINDS.includes(s.kind) && !(s.kind === '기타' && NOT_TRAVEL.test(s.title)) && s.title !== '제주올레 11코스'
+
 export async function getSpots() {
   if (cache && Date.now() - cache.at < TTL) return cache.spots
   const [rows, tourSpots] = await Promise.all([fetchAll(SPOT_PATH), tour('areaBasedList2', { areaCode: '39', contentTypeId: '12', numOfRows: '300', pageNo: '1' })])
@@ -44,6 +50,7 @@ export async function getSpots() {
     }))
     .map((sp) => ({ ...sp, tourId: nearestTourId(sp, tourSpots) }))
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && s.lat > 33 && s.lat < 34)
+    .filter(isTravel)
   cache = { at: Date.now(), spots }
   return spots
 }

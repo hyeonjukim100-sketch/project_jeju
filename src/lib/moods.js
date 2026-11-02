@@ -18,6 +18,16 @@ export const KIND_EMOJI = {
   '사진 있는 곳': 'camera', '푸른 공간': 'wave', '초록 공간': 'herb',
 }
 
+// 화면의 장소 종류 칩: 비슷한 종류는 하나로 묶는다 (원래 종류는 상세와 동선 추천이 그대로 쓴다)
+export const KIND_GROUP = {
+  자연: '자연', 생태공원: '자연',
+  오름: '오름',
+  트레일: '트레일', 지질트레일: '트레일',
+  문화: '문화', 문화유적: '문화', 유적: '문화', 박물관: '문화', 사찰: '문화',
+  예술: '예술', 시장: '시장', 올레코스: '올레코스',
+}
+export const KIND_CHIPS = ['자연', '오름', '트레일', '문화', '예술', '시장', '올레코스']
+
 // 시간대 문구 (제주 현지 시각 기준)
 export const MOMENTS = [
   [5, '아침 산책하기 좋은 시간', 'sunrise'],
@@ -28,18 +38,35 @@ export const MOMENTS = [
   [24, '사색에 잠기기 좋은 시간', 'crescent'],
 ]
 export const momentOf = (timeStr) => {
-  const h = Number(timeStr.slice(11, 13))
+  const h = Number(String(timeStr).slice(0, 2)) // 'HH:MM'
   const [, text, emoji] = MOMENTS.find(([end]) => h < end) || MOMENTS.at(-1)
   return { text, emoji }
 }
 
+// 서버가 주는 sky: clear | partly | cloudy | overcast | fog | rain | snow | sleet
 export function skyOf(w) {
-  const { code, cloud, isDay } = w
-  if (code === 0) return isDay ? { text: '맑음', emoji: 'sun' } : { text: '맑은 밤', emoji: 'crescent' }
-  if (code <= 3) return cloud > 60 ? { text: '구름 많음', emoji: 'cloud' } : { text: '구름 조금', emoji: 'partly' }
-  if (code <= 48) return { text: '흐림·안개', emoji: 'fog' }
-  if (code <= 77 && code >= 71) return { text: '눈', emoji: 'snow' }
-  return { text: '비', emoji: 'rain' }
+  switch (w.sky) {
+    case 'clear':
+      return w.isDay ? { text: '맑음', emoji: 'sun' } : { text: '맑은 밤', emoji: 'crescent' }
+    case 'partly':
+      return { text: '구름 조금', emoji: 'partly' }
+    case 'cloudy':
+      return { text: '구름 많음', emoji: 'cloud' }
+    case 'fog':
+      return { text: '안개', emoji: 'fog' }
+    case 'rain':
+      return { text: '비', emoji: 'rain' }
+    case 'snow':
+      return { text: '눈', emoji: 'snow' }
+    case 'sleet':
+      return { text: '진눈깨비', emoji: 'rain' }
+    default:
+      return { text: '흐림', emoji: 'cloud' }
+  }
 }
 
-export const airText = (pm25) => (pm25 == null ? '' : pm25 <= 15 ? '숨쉬기 좋은 공기' : pm25 <= 35 ? '보통 공기' : '공기가 탁해요')
+// 초미세먼지(PM2.5) 기준: 환경부 좋음 15 이하 · 보통 35 이하 · 나쁨 75 이하
+export const airText = (pm25) => (pm25 == null ? '' : pm25 <= 15 ? '공기 좋음' : pm25 <= 35 ? '공기 보통' : pm25 <= 75 ? '공기 나쁨' : '공기 매우 나쁨')
+
+// 자외선 지수: 0~2 낮음 · 3~5 보통 · 6~7 높음 · 8~10 매우 높음 · 11 이상 위험
+export const uvText = (uv) => (uv == null ? '' : uv < 3 ? '자외선 낮음' : uv < 6 ? '자외선 보통' : uv < 8 ? '자외선 높음' : uv < 11 ? '자외선 매우 높음' : '자외선 위험')
