@@ -93,7 +93,7 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .map-stage { position: relative; flex: 1; min-height: 0; }
 .map-stage canvas { position: absolute; inset: 0; }
 .glass-panel {
-  position: absolute; left: 1rem; top: 1rem; width: min(350px, calc(100% - 2rem)); max-height: calc(100% - 2rem); overflow-y: auto;
+  z-index: 20; position: absolute; left: 1rem; top: 1rem; width: min(350px, calc(100% - 2rem)); max-height: calc(100% - 2rem); overflow-y: auto;
   padding: 1.1rem 1.25rem; border-radius: var(--r-card); background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(8px); box-shadow: var(--shadow-soft); border: 1px solid var(--line);
 }
@@ -179,3 +179,43 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .chat-note { margin: .5rem 0 0; font-size: .72rem; color: var(--sub); text-align: center; }
 .crisis-card { margin-top: .6rem; padding: .7rem .8rem; border-radius: 14px; background: var(--surface); display: flex; flex-direction: column; gap: .4rem; align-items: flex-start; }
 .crisis-card a { font-weight: 700; color: var(--ink); text-decoration: underline; min-height: 44px; display: inline-flex; align-items: center; }
+
+/* 7단계: 하루 동선 */
+.panel-tabs { display: flex; gap: .4rem; margin-bottom: .8rem; }
+.panel-tabs button { flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--sub); font-weight: 600; }
+.panel-tabs button.on { background: var(--strong); color: var(--strong-ink); border-color: transparent; }
+.plan-list { list-style: none; padding: 0; margin: .8rem 0; }
+.plan-row { display: flex; gap: .6rem; align-items: flex-start; padding: .6rem .7rem; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); }
+.plan-no, .route-badge { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--strong); color: var(--strong-ink); font-weight: 700; font-size: .85rem; box-shadow: var(--shadow-soft); border: 2px solid #fff; }
+.route-badge.rest, .plan-no { }
+.route-badge.rest { background: var(--accent); }
+.plan-time { font-size: .78rem; color: var(--sub); }
+.plan-title { border: 0; background: transparent; padding: 0; font-weight: 700; text-align: left; color: var(--ink); min-height: 32px; }
+.plan-ctl { display: flex; flex-direction: column; gap: .2rem; }
+.plan-ctl .chip { min-height: 32px; min-width: 44px; padding: .1rem .5rem; }
+.plan-leg { margin: .35rem 0 .35rem 2.4rem; font-size: 1rem; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: .4rem; }
+.plan-leg i { font-size: 1.15rem; color: var(--strong); }
+.plan-leg small { font-weight: 400; color: var(--sub); font-size: .85rem; }
+.plan-leg.long { color: #9A4A2C; font-weight: 600; }
+.plan-sum { margin: .4rem 0 .8rem; padding: .7rem .9rem; border-radius: 16px; background: var(--soft); font-size: .88rem; font-weight: 600; }
+.nearby { margin-top: .6rem; }
+.nearby-list { list-style: none; padding: 0; margin: .5rem 0 0; display: grid; gap: .4rem; }
+.nearby-list li { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); }
+.nearby-list a { color: var(--ink); font-weight: 600; }
+
+/* 모바일 보완: 큰 시트, 챗 버튼 비켜 가기, 날씨 띠 줄이기 */
+@media (max-width: 640px) {
+  .glass-panel { padding-bottom: 5rem; }
+  .glass-panel.tall { max-height: 66%; }
+  .weather-strip { padding: .45rem 1rem; gap: .2rem 1rem; }
+  .ws-sub { display: none; }
+  .ws-meta span:not(:first-child) { display: none; }
+  .chat-fab { width: 52px; height: 52px; right: .8rem; }
+}
+
+.sheet-toggle { display: none; }
+@media (max-width: 640px) {
+  .sheet-toggle { display: flex; align-items: center; justify-content: center; gap: .3rem; width: 100%; min-height: 32px; margin: -.3rem 0 .4rem; border: 0; background: transparent; color: var(--sub); font-size: .85rem; }
+  .glass-panel.folded { max-height: 7.2rem; overflow: hidden; padding-bottom: .6rem; }
+  .glass-panel.folded > :not(.sheet-toggle):not(.panel-tabs) { display: none; }
+}

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
-import { fetchSpots, fetchWeather } from '../api/client'
+import { fetchLegs, fetchRoute, fetchSpots, fetchWeather } from '../api/client'
 
 // 로그인 오류를 읽기 쉬운 문장으로
 const authMessage = (error) => {
@@ -80,6 +80,50 @@ export const useAppStore = create((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut()
     get().toast('로그아웃했어요')
+  },
+
+  // 하루 동선 — 직접 담거나 기분에 맞춰 만든다. 한 곳씩 쌓이고, 구간별 이동시간은 서버(OSRM)가 계산한다.
+  plan: { stops: [], legs: [] },
+  planBusy: false,
+  panelTab: 'places', // 'places' | 'plan'
+  setPanelTab: (panelTab) => set({ panelTab }),
+  _setStops: async (stops) => {
+    const token = (get()._legToken = (get()._legToken || 0) + 1)
+    set({ plan: { stops, legs: get().plan.legs.slice(0, Math.max(0, stops.length - 1)) } })
+    if (stops.length < 2) return set({ plan: { stops, legs: [] } })
+    try {
+      const legs = await fetchLegs(stops.map(({ lat, lng }) => ({ lat, lng })))
+      if (token === get()._legToken) set({ plan: { stops: get().plan.stops, legs } })
+    } catch {
+      if (token === get()._legToken) set({ plan: { stops: get().plan.stops, legs: [] } })
+    }
+  },
+  addStop: (stop) => {
+    const { stops } = get().plan
+    if (stops.some((s) => s.title === stop.title)) return get().toast('이미 동선에 있어요', 'warning')
+    if (stops.length >= 6) return get().toast('느린 하루는 여섯 곳까지만 담을 수 있어요', 'warning')
+    get()._setStops([...stops, stop])
+    get().toast('동선에 담았어요')
+  },
+  removeStop: (i) => get()._setStops(get().plan.stops.filter((_, idx) => idx !== i)),
+  moveStop: (i, dir) => {
+    const stops = [...get().plan.stops]
+    const j = i + dir
+    if (j < 0 || j >= stops.length) return
+    ;[stops[i], stops[j]] = [stops[j], stops[i]]
+    get()._setStops(stops)
+  },
+  clearPlan: () => get()._setStops([]),
+  generatePlan: async () => {
+    set({ planBusy: true })
+    try {
+      const { stops, legs } = await fetchRoute(get().moodLevel)
+      set({ plan: { stops, legs }, panelTab: 'plan' })
+    } catch (e) {
+      get().toast('동선을 만들지 못했어요. 잠시 후 다시 시도해 주세요', 'danger')
+    } finally {
+      set({ planBusy: false })
+    }
   },
 
   // 마음 기록 — 본인 것만 (Supabase RLS 가 막아 준다). mood 칸에는 이모지 이름만 저장한다.

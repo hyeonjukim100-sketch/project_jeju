@@ -16,3 +16,10 @@ export async function sendChat(messages, moodLevel) {
   if (!r.ok) throw new Error(data.error || '대화에 실패했어요')
   return data
 }
+export const fetchRoute = (mood) => get(`/api/route?mood=${mood}`)
+export const fetchPlaces = ({ lat, lng, category }) => get(`/api/places?lat=${lat}&lng=${lng}&category=${category}`)
+export async function fetchLegs(points) {
+  const r = await fetch('/api/legs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ points }) })
+  if (!r.ok) throw new Error('이동시간을 계산하지 못했어요')
+  return (await r.json()).legs
+}

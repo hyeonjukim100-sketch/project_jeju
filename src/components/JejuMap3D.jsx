@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { Html, Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { SEASONS, season } from '../lib/season'
 import { useAppStore } from '../store/useAppStore'
@@ -87,6 +87,23 @@ function Pins({ spots }) {
   )
 }
 
+// 하루 동선: 번호 핀과 이어 주는 선
+function RoutePath() {
+  const stops = useAppStore((s) => s.plan.stops)
+  const pts = useMemo(() => stops.map((s) => toScene(s.lng, s.lat)), [stops])
+  if (!pts.length) return null
+  return (
+    <group>
+      {pts.length > 1 && <Line points={pts.map(([x, y, z]) => [x, y + 0.12, z])} color="#ffffff" lineWidth={3} dashed dashSize={0.12} gapSize={0.08} />}
+      {pts.map(([x, y, z], i) => (
+        <Html key={i} position={[x, y + 0.3, z]} center zIndexRange={[5, 0]}>
+          <div className={`route-badge ${stops[i].type}`}>{i + 1}</div>
+        </Html>
+      ))}
+    </group>
+  )
+}
+
 export default function JejuMap3D({ spots, weather }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
   const night = !!weather && !weather.isDay
@@ -103,6 +120,7 @@ export default function JejuMap3D({ spots, weather }) {
       <Sea color={tone(sc.sea, night)} />
       <Island land={tone(sc.land, night)} mount={tone(sc.mount, night)} />
       {spots.length > 0 && <Pins spots={spots} />}
+      <RoutePath />
       <OrbitControls enablePan={false} minDistance={3} maxDistance={20} maxPolarAngle={Math.PI / 2.2} />
     </Canvas>
   )
