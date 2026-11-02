@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
+import { fetchSpots, fetchWeather } from '../api/client'
 
 // 여러 페이지가 함께 쓰는 상태. 한 화면에서만 쓰면 useState, 같이 쓰면 여기.
 export const useAppStore = create(
@@ -21,6 +22,25 @@ export const useAppStore = create(
       // 3D 지도에서 선택한 장소 (지도·동선·에이전트가 같이 봄)
       selectedSpot: null,
       selectSpot: (selectedSpot) => set({ selectedSpot }),
+
+      // 관광지·날씨 (서버 /api 에서 한 번만 불러 옴)
+      spots: [],
+      weather: null,
+      loadSpots: async () => {
+        if (get().spots.length) return
+        try {
+          set({ spots: (await fetchSpots()).spots })
+        } catch (e) {
+          get().toast(`관광지를 불러오지 못했어요: ${e.message}`, 'danger')
+        }
+      },
+      loadWeather: async () => {
+        try {
+          set({ weather: await fetchWeather() })
+        } catch {
+          /* 날씨가 없어도 지도는 보인다 */
+        }
+      },
 
       // 마음 기록 — Supabase mood_logs 테이블과 동기화
       moodLogs: [],

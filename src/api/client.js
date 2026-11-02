@@ -6,3 +6,7 @@ async function get(path) {
 }
 
 export const hello = () => get('/api/hello')
+export const fetchSpots = () => get('/api/spots')
+export const fetchPhotos = ({ tourId, lat, lng }) =>
+  get(tourId ? `/api/photos?id=${tourId}` : `/api/photos?lat=${lat}&lng=${lng}`)
+export const fetchWeather = () => get('/api/weather')
