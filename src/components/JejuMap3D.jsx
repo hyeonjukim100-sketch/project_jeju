@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Html, Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import dem from '../data/jeju-dem.json'
 import { SEASONS, season } from '../lib/season'
 import { KIND_EMOJI, KIND_GROUP } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
+import DetailMap from './DetailMap'
 
 // 지형: 공개 고도 자료(DEM, AWS Terrain Tiles/SRTM)를 격자로 줄여 두었다. 땅 높이는 이 고도를 그대로 따른다.
 // 위경도 → 장면 좌표 (제주섬 중심 126.55E, 33.38N). 위도 33도에서는 경도 1도가 위도 1도의 83% 길이라 가로를 그만큼 줄인다.
@@ -26,6 +27,16 @@ export const toScene = (lng, lat) => {
   const e = elevAt(lng, lat)
   return [(lng - 126.55) * K * XS, BASE + (e > 0 ? e * EXAG : 0) + 0.04, -(lat - 33.38) * K]
 }
+export const fromScene = (x, z) => ({ lng: x / (K * XS) + 126.55, lat: 33.38 - z / K })
+
+// 3D 카메라 거리 ↔ 세부 지도(타일 지도) 확대 단계. 장면 1칸 = 위도 0.1도 ≈ 11.12km, 타일 지도는 확대 0에서 화면 한 점이 156543m×cos(위도).
+const FOV = 45
+const M_PER_UNIT = 11119.5
+const TAN = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
+export const zoomForDist = (d, lat, h) => Math.log2((156543.03 * Math.cos((lat * Math.PI) / 180) * h) / (2 * d * TAN * M_PER_UNIT))
+export const distForZoom = (z, lat, h) => ((156543.03 * Math.cos((lat * Math.PI) / 180)) / 2 ** z * h) / (2 * TAN * M_PER_UNIT)
+const DETAIL_D = 1.9 // 이 거리보다 가까워지면 세부 지도로 바뀐다
+
 // 땅(1)/바다(0) 마스크를 상자 평균으로 흐려서, 해안선이 칸 모양 계단이 아니라 부드러운 곡선이 되게 한다
 const blur = (src, rad) => {
   const { cols, rows } = dem
@@ -227,7 +238,7 @@ function Pins({ spots }) {
   }, [spots])
   return (
     <group>
-      {groups.map(([name, list]) => (
+      {!selected && groups.map(([name, list]) => ( // 장소를 고르면 그 핀만 보인다
         <PinLayer key={name} name={name} spots={list} onPick={selectSpot} />
       ))}
       {selected && <PinLayer name={pinKey(selected)} spots={[selected]} size={1.55} ring="#ff7a6b" lift={0.1} top />}
@@ -303,14 +314,77 @@ function RoutePath() {
   )
 }
 
+// 카메라: 장소를 고르면 그 핀으로 날아가고, 충분히 확대하면 세부 지도로 바꾼다
+function CameraRig() {
+  const controls = useRef()
+  const goal = useRef(null)
+  const { camera, size } = useThree()
+  const focus = useAppStore((s) => s.focus)
+  const detailReq = useAppStore((s) => s.detailReq)
+
+  const enterDetail = () => {
+    const t = controls.current.target
+    const { lat, lng } = fromScene(t.x, t.z)
+    const zoom = Math.round(THREE.MathUtils.clamp(zoomForDist(camera.position.distanceTo(t), lat, size.height), 11.5, 15) * 4) / 4
+    useAppStore.getState().setDetail({ lat, lng, zoom })
+  }
+
+  useEffect(() => {
+    if (!focus || useAppStore.getState().detail) return // 세부 지도를 보는 중이면 그쪽이 움직인다
+    const c = controls.current
+    const [x, y, z] = toScene(focus.lng, focus.lat)
+    const to = new THREE.Vector3(x, y - 0.04, z)
+    const dir = camera.position.clone().sub(c.target).normalize()
+    if (dir.y < 0.55) { dir.y = 0.55; dir.normalize() } // 너무 눕지 않게
+    const dist = focus.dist || 2.2
+    const pos = to.clone().addScaledVector(dir, dist)
+    if (focus.instant) {
+      c.target.copy(to)
+      camera.position.copy(pos)
+      c.update()
+    } else goal.current = { to, pos, detail: { lat: focus.lat, lng: focus.lng } } // 다 날아간 뒤 세부 지도로
+  }, [focus])
+
+  useEffect(() => {
+    if (!detailReq) return
+    enterDetail()
+  }, [detailReq])
+
+  useFrame((_, dt) => {
+    const c = controls.current
+    if (!c) return
+    const g = goal.current
+    if (g) {
+      const k = 1 - Math.exp(-dt * 4.5)
+      c.target.lerp(g.to, k)
+      camera.position.lerp(g.pos, k)
+      if (camera.position.distanceTo(g.pos) < 0.015) {
+        goal.current = null
+        if (g.detail) useAppStore.getState().setDetail({ ...g.detail, zoom: 16, shift: true })
+      }
+      return
+    }
+    // 끌어서 섬 밖으로 나가지 않게
+    const t = c.target
+    const cx = THREE.MathUtils.clamp(t.x, -4.5, 4.5), cz = THREE.MathUtils.clamp(t.z, -3.5, 3.5)
+    if (cx !== t.x || cz !== t.z) { camera.position.x += cx - t.x; camera.position.z += cz - t.z; t.x = cx; t.z = cz }
+    if (camera.position.distanceTo(t) < DETAIL_D && !useAppStore.getState().detail) enterDetail()
+  })
+
+  return <OrbitControls ref={controls} makeDefault screenSpacePanning={false} zoomToCursor minDistance={1.2} maxDistance={20} maxPolarAngle={Math.PI / 2.2} onStart={() => (goal.current = null)} />
+}
+
 export default function JejuMap3D({ spots, weather }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
+  const detail = useAppStore((s) => s.detail)
+  const requestDetail = useAppStore((s) => s.requestDetail)
   const night = !!weather && !weather.isDay
   const sc = SEASONS[season].scene
   const sky = useMemo(() => tone(SEASONS[season].vars.bg, night), [night])
   const narrow = window.innerWidth < 640 // 세로로 긴 화면에서는 섬 전체가 보이게 뒤로 물러난다
 
   return (
+    <>
     <Canvas camera={{ position: narrow ? [0, 9, 12] : [0, 6, 8], fov: 45 }} raycaster={{ params: { Points: { threshold: 0.07 } } }} onPointerMissed={() => selectSpot(null)}>
       <color attach="background" args={[sky]} />
       <fog attach="fog" args={[sky, 16, 34]} />
@@ -323,7 +397,15 @@ export default function JejuMap3D({ spots, weather }) {
       <MapLabels />
       <RoutePath />
       <SeasonPins />
-      <OrbitControls enablePan={false} minDistance={1.2} maxDistance={20} maxPolarAngle={Math.PI / 2.2} />
+      <CameraRig />
     </Canvas>
+    {detail ? (
+      <DetailMap spots={spots} />
+    ) : (
+      <button type="button" className="map-switch" onClick={requestDetail}>
+        <i className="bi bi-map" /> 세부 지도
+      </button>
+    )}
+    </>
   )
 }

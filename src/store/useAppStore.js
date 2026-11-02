@@ -27,7 +27,19 @@ export const useAppStore = create((set, get) => ({
 
   // 3D 지도에서 선택한 장소 (지도·동선·에이전트가 같이 봄)
   selectedSpot: null,
-  selectSpot: (selectedSpot) => set({ selectedSpot }),
+  // 장소를 고르면 지도가 그 핀 위치로 이동한다 (focus 가 바뀔 때마다 한 번)
+  selectSpot: (selectedSpot) =>
+    set((st) => ({
+      selectedSpot,
+      focus: selectedSpot && selectedSpot.lat != null ? { lat: selectedSpot.lat, lng: selectedSpot.lng, n: (st.focus?.n || 0) + 1 } : st.focus,
+    })),
+  focus: null,
+  // 세부 지도(2D): 3D 를 충분히 확대하면 켜진다. detail = { lat, lng, zoom }
+  detail: null,
+  detailReq: 0,
+  setDetail: (detail) => set({ detail }),
+  requestDetail: () => set((st) => ({ detailReq: st.detailReq + 1 })),
+  exitDetail: (view) => set((st) => ({ detail: null, focus: { ...view, n: (st.focus?.n || 0) + 1 } })),
 
   // 챗 열기: 제안 카드의 "AI에게 더 물어보기" 가 질문을 미리 채워 챗을 연다 (자동으로 보내지는 않는다)
   chatDraft: null,

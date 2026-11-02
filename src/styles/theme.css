@@ -453,3 +453,25 @@ p { text-wrap: pretty; }
 /* 지도 위 지명 */
 .map-label { white-space: nowrap; font-size: .7rem; font-weight: 700; color: var(--ink); letter-spacing: -.01em; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 6px #fff; opacity: .92; user-select: none; }
 .map-label.big { font-size: .95rem; padding: .1rem .55rem; border-radius: 999px; background: rgba(255,255,255,.78); box-shadow: var(--shadow-soft); text-shadow: none; }
+
+/* 세부 지도(2D): 3D 를 확대하면 나타나는 실제 지도 */
+.detail-map { position: absolute; inset: 0; z-index: 10; animation: dm-in .35s ease both; }
+.detail-map-box { position: absolute; inset: 0; z-index: 0; background: var(--bg); font-family: inherit; }
+@keyframes dm-in { from { opacity: 0; } to { opacity: 1; } }
+.map-switch {
+  position: absolute; z-index: 12; top: 1rem; right: 1rem; min-height: var(--tap, 44px); padding: .4rem 1rem; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; font-size: .9rem; color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--line); box-shadow: var(--shadow-soft); backdrop-filter: blur(8px);
+}
+.map-switch:hover { background: var(--surface); }
+.dm-pin-wrap { background: transparent; border: 0; }
+.dm-pin { width: 100%; height: 100%; border-radius: 50%; background: #fff; border: 3px solid #F2A65A; box-shadow: 0 2px 8px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; }
+.dm-pin img { width: 68%; height: 68%; }
+.dm-pin.sel { border-width: 4px; }
+.dm-tip { font-weight: 700; font-size: .85rem; border-radius: 999px; padding: .2rem .7rem; border: 1px solid var(--line); box-shadow: var(--shadow-soft); }
+.dm-tip::before { display: none; }
+.detail-map .route-badge { width: 28px; height: 28px; }
+.detail-map .leaflet-control-attribution { font-size: .7rem; }
+@media (prefers-reduced-motion: reduce) { .detail-map { animation: none; } }
+.dm-pin { transition: transform .2s; }
+.dm-far .dm-pin:not(.sel) { transform: scale(.62); }
