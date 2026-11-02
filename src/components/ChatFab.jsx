@@ -34,6 +34,8 @@ const STEPS = [
   },
 ]
 const NOTE = '대화창을 닫으면 이 대화와 추천 코스는 사라져요. 마음에 드는 코스는 내 동선에 담아 두세요.'
+const BUS_URL = 'https://bus.jeju.go.kr'
+const hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}` : `${m}분`)
 const MODE = { car: 'car', taxi: 'car', walk: 'walk', bus: 'bus' }
 
 const SUGGESTIONS = ['오늘 날씨에 맞는 느린 하루 코스를 추천해 주세요', '조용히 걷기 좋은 곳이 궁금해요']
@@ -241,7 +243,7 @@ function CourseCard({ course }) {
   const setTransport = useAppStore((s) => s.setTransport)
   const setPanelTab = useAppStore((s) => s.setPanelTab)
 
-  const leg = (l) => (mode === 'bus' ? `🚌 버스 ${l.km}km · 시간은 배차에 따라 달라요` : mode === 'walk' ? `🚶 걸어서 약 ${l.walk}분 (${l.km}km)` : `🚗 차로 약 ${l.minutes}분 (${l.km}km)`)
+  const leg = (l) => (mode === 'bus' ? `🚌 버스로 이동 ${l.km}km` : mode === 'walk' ? `🚶 걸어서 약 ${hm(l.walk)} (${l.km}km)${l.walk > 30 ? ' · 많이 멀어요' : ''}` : `🚗 차로 약 ${l.minutes}분 (${l.km}km)`)
   const plain = ({ tip, ...stop }) => stop
   const show = (s) => {
     const sp = spots.find((x) => x.title === s.title)
@@ -275,7 +277,13 @@ function CourseCard({ course }) {
           </li>
         ))}
       </ol>
-      {mode === 'bus' && <div className="small text-secondary">정확한 버스 시간은 제주버스정보시스템 앱에서 확인해 주세요.</div>}
+      {mode === 'bus' && <div className="small text-secondary">
+          배차 간격과 시간은{' '}
+          <a href={BUS_URL} target="_blank" rel="noreferrer">
+            제주버스정보시스템 <i className="bi bi-box-arrow-up-right" />
+          </a>
+          에서 확인해 주세요.
+        </div>}
       <button type="button" className="btn-soft w-100" onClick={addAll}>
         이 코스를 내 동선에 담기
       </button>

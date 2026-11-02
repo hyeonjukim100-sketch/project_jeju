@@ -19,7 +19,10 @@ const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 �
 const STAY = { spot: 60, meal: 60, rest: 40 } // 머무는 시간(분): 구경 60, 식사 60, 쉬어가기 40
 const STOP_LABEL = { spot: '구경', meal: '식사', rest: '쉬어가기' }
 const STOP_EMOJI = { meal: 'food', rest: 'coffee' }
-const LONG_WALK = 20 // 걷는 구간은 20분 안쪽이 편해요
+const LONG_WALK = 30 // 걷는 구간이 30분을 넘으면 많이 멀다고 알려 준다
+const BUS_URL = 'https://bus.jeju.go.kr' // 제주버스정보시스템 (배차 간격·도착 시각)
+// 60분이 넘으면 "6시간 37분" 처럼 읽기 쉽게
+const hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}` : `${m}분`)
 const TRANSPORTS = [
   { key: 'car', label: '자동차', icon: 'bi-car-front' },
   { key: 'walk', label: '걷기', icon: 'bi-person-walking' },
@@ -286,11 +289,11 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
                 {legs[i] ? (
                   bus ? (
                     <>
-                      <i className="bi bi-bus-front" /> 버스로 이동 <small>({legs[i].km}km · 시간은 배차에 따라 달라요)</small>
+                      <i className="bi bi-bus-front" /> 버스로 이동 <small>{legs[i].km}km</small>
                     </>
                   ) : (
                     <>
-                      <i className={`bi ${transport === 'walk' ? 'bi-person-walking' : 'bi-car-front'}`} /> {transport === 'walk' ? '걸어서' : '차로'} 약 {legMin(legs[i])}분 <small>({legs[i].km}km){legMin(legs[i]) > (transport === 'walk' ? LONG_WALK : LONG_LEG) && ' · 조금 멀어요'}</small>
+                      <i className={`bi ${transport === 'walk' ? 'bi-person-walking' : 'bi-car-front'}`} /> {transport === 'walk' ? '걸어서' : '차로'} 약 {hm(legMin(legs[i]))} <small>({legs[i].km}km){legMin(legs[i]) > (transport === 'walk' ? LONG_WALK : LONG_LEG) && (transport === 'walk' ? ' · 많이 멀어요' : ' · 조금 멀어요')}</small>
                     </>
                   )
                 ) : (
@@ -300,12 +303,19 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
             )}
           </li>
         ))}
+        {bus && stops.length > 0 && (
+          <li className="plan-bus">
+            <a className="chip bus-link text-decoration-none" href={BUS_URL} target="_blank" rel="noreferrer">
+              <Emoji name="bus" size="1.2em" /> 제주버스정보시스템에서 배차 보기 <i className="bi bi-box-arrow-up-right" />
+            </a>
+          </li>
+        )}
       </ol>
       <div className="plan-sum">
         {bus ? `총 ${stops.length}곳 · 버스 이동 거리 ${legs.reduce((a, l) => a + l.km, 0).toFixed(1)}km` : `총 ${stops.length}곳 · 이동 ${driveTotal}분 · ${clock(START_MIN)}에 시작하면 ${clock(endAt)}쯤 마쳐요`}
         <div className="small text-secondary">
           {bus
-            ? '버스는 정류소 위치와 배차 시간을 알 수 없어 거리만 보여 드려요. 정확한 도착 시각은 제주버스정보시스템 앱에서 확인해 주세요. 머무는 시간은 구경·식사 60분, 쉬어가기 40분이에요.'
+            ? '버스는 거리만 보여 드려요. 배차 간격과 시간은 위 버스 버튼에서 제주버스정보시스템으로 확인해 주세요. 머무는 시간은 구경·식사 60분, 쉬어가기 40분이에요.'
             : `이동시간은 ${transport === 'walk' ? '시속 4.5km로 걷는 것' : '자동차'} 기준 예상이고, 머무는 시간은 구경·식사 60분, 쉬어가기 40분으로 계산했어요.`}
         </div>
       </div>
