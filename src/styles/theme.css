@@ -240,3 +240,23 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .nearby-ctl { display: flex; flex-direction: column; gap: .25rem; }
 .trip-card { padding: .8rem 1rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); }
 .trip-card .stops { font-size: .85rem; color: var(--sub); }
+
+/* 올레길 · 푸른/초록 공간 */
+.panel-tabs button { font-size: .92rem; padding: 0 .4rem; }
+.olle-card { margin: .6rem 0; padding: .7rem .9rem; border-radius: 16px; background: var(--soft); }
+.olle-list { list-style: none; padding: 0; margin: .6rem 0 0; display: grid; gap: .35rem; }
+.olle-item { width: 100%; display: flex; align-items: center; gap: .6rem; min-height: 44px; padding: .4rem .8rem; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); color: var(--ink); }
+.olle-item.on { background: var(--strong); color: var(--strong-ink); border-color: transparent; }
+.olle-item.on .text-secondary { color: inherit !important; opacity: .8; }
+.olle-no { flex: none; min-width: 2.2rem; text-align: center; font-weight: 700; }
+.space-badge { margin-left: .5rem; padding: .05rem .55rem; border-radius: 999px; font-size: .75rem; color: #1F3548; }
+.space-badge.blue { background: #CFE8F5; }
+.space-badge.green { background: #D4EEDC; }
+.dot { display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; vertical-align: -1px; }
+.dot.blue { background: #6BB8E0; }
+.dot.green { background: #6CC08F; }
+.dot.other { background: #F2A65A; }
+
+/* 근처 카페: 작은 사진과 태그 */
+.nearby-thumb { flex: none; width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: var(--soft); }
+.nearby-tags { font-size: .78rem; color: var(--sub); }

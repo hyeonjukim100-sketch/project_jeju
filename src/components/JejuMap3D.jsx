@@ -19,8 +19,9 @@ export const toScene = (lng, lat) => {
   return [x, 0.32 + slope, z]
 }
 
-const KIND_COLOR = { 자연: '#6CC08F', 문화: '#F2A65A' }
-const kindColor = (kind) => KIND_COLOR[kind] || '#6BB8E0'
+// 핀 색: 푸른 공간(바다 가까이) · 초록 공간(오름·숲 같은 자연) · 그 밖
+const SPACE_COLOR = { blue: '#6BB8E0', green: '#6CC08F' }
+const spaceColor = (s) => SPACE_COLOR[s.space] || '#F2A65A'
 
 // 밤에는 계절색을 어둡게 섞는다
 const NIGHT = '#1d2a3c'
@@ -84,7 +85,7 @@ function Pins({ spots }) {
       const big = selected?.id === s.id
       m.compose(new THREE.Vector3(x, y, z), new THREE.Quaternion(), new THREE.Vector3(...Array(3).fill(big ? 2.4 : 1)))
       ref.current.setMatrixAt(i, m)
-      ref.current.setColorAt(i, c.set(big ? '#ffffff' : kindColor(s.kind)))
+      ref.current.setColorAt(i, c.set(big ? '#ffffff' : spaceColor(s)))
     })
     ref.current.instanceMatrix.needsUpdate = true
     ref.current.instanceColor.needsUpdate = true

@@ -1,5 +1,7 @@
 // 제주특별자치도 관내 관광지 + 관광지 이미지 (공공데이터포털 odcloud)
-const OD = 'https://api.odcloud.kr/api'
+import { visitJejuPhoto } from './visitjeju.js'
+
+const OD ='https://api.odcloud.kr/api'
 const SPOT_PATH = '/15111742/v1/uddi:735137ac-cee5-42f5-9119-a8b6c9f784dc'
 
 // 포털에서 받은 키가 인코딩 키(%)면 한 번 풀어서 쓴다
@@ -94,21 +96,24 @@ async function commonsPhotos(lat, lng) {
     }))
 }
 
-// 사진 목록: TourAPI(공식) 우선, 없으면 커먼즈
-export async function getPhotos({ tourId, lat, lng }) {
-  const key = tourId || `${lat},${lng}`
+// 사진 목록: 한국관광공사 TourAPI → 없으면 Visit Jeju(이름이 같은 곳) → 없으면 위키미디어 커먼즈(근처 사진)
+export async function getPhotos({ tourId, title, lat, lng }) {
+  const key = tourId || `${title || ''}@${lat},${lng}`
   if (photoCache.has(key)) return photoCache.get(key)
   let photos = []
-  if (tourId) {
-    const imgs = await tour('detailImage2', { contentId: tourId, imageYN: 'Y', numOfRows: '12', pageNo: '1' })
-    photos = imgs.map((i) => ({ url: https(i.originimgurl), credit: '한국관광공사', source: 'TourAPI' })).filter((p) => p.url)
-  }
-  if (!photos.length && Number.isFinite(lat) && Number.isFinite(lng)) {
-    try {
-      photos = await commonsPhotos(lat, lng)
-    } catch {
-      return [] // 일시적 실패는 캐시하지 않는다
+  try {
+    if (tourId) {
+      const imgs = await tour('detailImage2', { contentId: tourId, imageYN: 'Y', numOfRows: '12', pageNo: '1' })
+      photos = imgs.map((i) => ({ url: https(i.originimgurl), credit: '한국관광공사', source: 'TourAPI' })).filter((p) => p.url)
     }
+    if (!photos.length && title && Number.isFinite(lat) && Number.isFinite(lng)) {
+      photos = await visitJejuPhoto(title, { lat, lng }).catch(() => [])
+    }
+    if (!photos.length && Number.isFinite(lat) && Number.isFinite(lng)) {
+      photos = await commonsPhotos(lat, lng)
+    }
+  } catch {
+    return [] // 일시적 실패는 캐시하지 않는다
   }
   photoCache.set(key, photos)
   return photos

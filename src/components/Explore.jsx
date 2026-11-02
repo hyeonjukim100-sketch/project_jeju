@@ -6,6 +6,7 @@ import CitrusRating from './CitrusRating'
 import ReviewBox from './ReviewBox'
 import TripRecord from './TripRecord'
 import { fetchPhotos, fetchPlaces } from '../api/client'
+import { SPACE_LABEL } from '../lib/space'
 import { ratingsFor } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { KIND_EMOJI, MOOD_LEVELS } from '../lib/moods'
@@ -98,6 +99,7 @@ function Nearby({ spot }) {
           {shown.map((p) => (
             <li key={p.id} className="nearby-item">
               <div className="nearby-row">
+                {p.vj?.photo && <img className="nearby-thumb" src={p.vj.photo} alt="" loading="lazy" />}
                 <div className="flex-grow-1">
                   <a href={p.url} target="_blank" rel="noreferrer">
                     {p.title}
@@ -105,6 +107,7 @@ function Nearby({ spot }) {
                   <div className="small text-secondary">
                     {p.category} · {p.distance}m
                   </div>
+                  {p.vj?.tags.length > 0 && <div className="nearby-tags">{p.vj.tags.map((t) => `#${t}`).join(' ')}</div>}
                   {rated(p) && (
                     <div className="small">
                       <CitrusRating value={rated(p).avg} size="1rem" /> {rated(p).avg.toFixed(1)} ({rated(p).count})
@@ -125,7 +128,50 @@ function Nearby({ spot }) {
           ))}
         </ul>
       )}
+      {shown.some((p) => p.vj) && <div className="small text-secondary mt-2">사진·태그는 가게가 올린 정보예요(제주관광공사 Visit Jeju). 분위기를 보증하는 말은 아니에요.</div>}
     </div>
+  )
+}
+
+// 올레길: 코스 정보 카드 (올레코스 API). 지도 선은 OlleLines.jsx 에 꺼 두었다
+function OllePanel() {
+  const { olle, selectedOlle, selectOlle, loadOlle } = useAppStore()
+  useEffect(() => {
+    loadOlle()
+  }, [])
+  const cur = olle.find((c) => c.id === selectedOlle)
+
+  return (
+    <>
+      <p className="small text-secondary">제주 올레코스 현황(공공데이터포털)의 코스 정보예요. 걷기 전에 거리와 시간을 가늠해 보세요.</p>
+      {cur && (
+        <div className="olle-card">
+          <div className="fw-semibold">
+            <Emoji name="footprints" size="1.1em" /> {cur.id}코스 · {cur.name}
+          </div>
+          <div className="small">
+            {cur.km}km · {cur.time}
+          </div>
+          <div className="small text-secondary">{cur.route}</div>
+        </div>
+      )}
+      {olle.length === 0 && <div className="small text-secondary">올레코스를 불러오는 중…</div>}
+      <ul className="olle-list">
+        {olle.map((c) => (
+          <li key={`${c.id}-${c.name}`}>
+            <button type="button" className={`olle-item ${c.id === selectedOlle ? 'on' : ''}`} aria-pressed={c.id === selectedOlle} onClick={() => selectOlle(c.id === selectedOlle ? null : c.id)}>
+              <span className="olle-no">{c.id}</span>
+              <span className="flex-grow-1 text-start">
+                {c.name}
+                <span className="small text-secondary d-block">
+                  {c.km}km · {c.time}
+                </span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
 
@@ -229,11 +275,14 @@ export default function Explore() {
     loadWeather()
   }, [])
 
-  const kinds = useMemo(() => ['전체', '사진 있는 곳', ...new Set(spots.map((s) => s.kind).filter(Boolean))], [spots])
-  const shown = useMemo(
-    () => (kind === '전체' ? spots : kind === '사진 있는 곳' ? spots.filter((s) => s.tourId) : spots.filter((s) => s.kind === kind)),
-    [spots, kind],
-  )
+  const kinds = useMemo(() => ['전체', '푸른 공간', '초록 공간', '사진 있는 곳', ...new Set(spots.map((s) => s.kind).filter(Boolean))], [spots])
+  const shown = useMemo(() => {
+    if (kind === '전체') return spots
+    if (kind === '사진 있는 곳') return spots.filter((s) => s.tourId)
+    if (kind === '푸른 공간') return spots.filter((s) => s.space === 'blue')
+    if (kind === '초록 공간') return spots.filter((s) => s.space === 'green')
+    return spots.filter((s) => s.kind === kind)
+  }, [spots, kind])
   const mood = MOOD_LEVELS[moodLevel]
 
   return (
@@ -252,14 +301,20 @@ export default function Explore() {
             <button type="button" role="tab" aria-selected={panelTab === 'plan'} className={panelTab === 'plan' ? 'on' : ''} onClick={() => setPanelTab('plan')}>
               하루 동선{plan.stops.length > 0 && ` ${plan.stops.length}`}
             </button>
+            <button type="button" role="tab" aria-selected={panelTab === 'olle'} className={panelTab === 'olle' ? 'on' : ''} onClick={() => setPanelTab('olle')}>
+              올레길
+            </button>
           </div>
 
-          {panelTab === 'plan' ? (
+          {panelTab === 'olle' ? (
+            <OllePanel />
+          ) : panelTab === 'plan' ? (
             <PlanTab spots={spots} />
           ) : spot ? (
             <>
               <div className="panel-kicker">
                 {KIND_EMOJI[spot.kind] && <Emoji name={KIND_EMOJI[spot.kind]} size="1.1em" />} {spot.kind}
+                {spot.space && <span className={`space-badge ${spot.space}`}>{SPACE_LABEL[spot.space]}</span>}
               </div>
               <h2 className="panel-title">{spot.title}</h2>
               <div className="small text-secondary mb-2">{spot.address}</div>
@@ -284,6 +339,10 @@ export default function Explore() {
               <div className="mood-pill">
                 <Emoji name={mood.emoji} size="1.3em" /> 오늘은 “{mood.label}”
               </div>
+              <p className="small text-secondary mb-2">
+                핀 색: <span className="dot blue" /> 푸른 공간(바다 가까이) · <span className="dot green" /> 초록 공간(오름·숲 같은 자연) · <span className="dot other" /> 그 밖.
+                장소의 성격을 나눈 것이고, 몸이나 마음에 효과가 있다는 뜻은 아니에요.
+              </p>
               <div className="kind-chips">
                 {kinds.map((k) => (
                   <button key={k} type="button" className={`chip ${k === kind ? 'on' : ''}`} onClick={() => setKind(k)}>

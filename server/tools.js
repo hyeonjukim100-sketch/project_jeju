@@ -1,4 +1,5 @@
 // 에이전트가 쓰는 도구. 모델에는 이름·설명·인자 모양만 보이고, 실제 실행은 여기서 한다.
+import { getOlleCourses } from './olle.js'
 import { getSpots } from './tour.js'
 import { getWeather } from './weather.js'
 
@@ -31,6 +32,24 @@ export const TOOLS = [
       if (area) list = list.filter((s) => s.address.includes(area))
       const picked = [...list].sort(() => Math.random() - 0.5).slice(0, 8) // 매번 같은 곳만 나오지 않게 섞는다
       return { matched: list.length, spots: picked.map(compact) }
+    },
+  },
+  {
+    name: 'search_olle_courses',
+    description:
+      '제주 올레길 코스를 찾습니다. 코스 이름·거리(km)·걷는 데 걸리는 시간·시작과 끝 지점을 줍니다. 짧고 가벼운 코스를 찾을 때는 max_km 를, 지역 이름(예: 성산, 서귀포, 우도)은 keyword 로 씁니다.',
+    parameters: {
+      type: 'object',
+      properties: {
+        keyword: { type: 'string', description: '코스 이름이나 시종점에 들어 있는 낱말' },
+        max_km: { type: 'number', description: '이 거리(km) 이하의 코스만' },
+      },
+    },
+    run: async ({ keyword, max_km } = {}) => {
+      let list = await getOlleCourses()
+      if (keyword) list = list.filter((c) => `${c.name} ${c.route}`.includes(keyword))
+      if (max_km) list = list.filter((c) => c.km <= max_km)
+      return { matched: list.length, courses: list.slice(0, 8).map((c) => ({ course: `${c.id}코스`, name: c.name, km: c.km, time: c.time, route: c.route })) }
     },
   },
   {

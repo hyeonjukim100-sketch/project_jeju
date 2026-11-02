@@ -15,7 +15,7 @@ export const KIND_EMOJI = {
   자연: 'nature', 문화: 'culture', 의료: 'hospital', 축제: 'festival', 오름: 'oreum', 예술: 'art',
   시장: 'market', 트레일: 'trail', 문화유적: 'ruins', '축제/행사': 'festival', 지질트레일: 'rock',
   박물관: 'museum', 유적: 'moai', 사찰: 'temple', 올레코스: 'footprints', 생태공원: 'park', 기타: 'pin',
-  '사진 있는 곳': 'camera',
+  '사진 있는 곳': 'camera', '푸른 공간': 'wave', '초록 공간': 'herb',
 }
 
 // 시간대 문구 (제주 현지 시각 기준)

@@ -1,6 +1,6 @@
 import { getPhotos } from '../server/tour.js'
 
-// GET /api/photos?id=<tourId> 또는 ?lat=&lng= → 사진 [{url, credit, source}]
+// GET /api/photos?id=<tourId>&title=&lat=&lng= → 사진 [{url, credit, source}]
 export default async function handler(req, res) {
   try {
     const q = new URL(req.url, 'http://x').searchParams
@@ -12,7 +12,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'id 또는 lat/lng 가 필요합니다' })
     }
     res.setHeader('Cache-Control', 's-maxage=86400')
-    res.status(200).json({ photos: await getPhotos({ tourId: id, lat, lng }) })
+    const title = (q.get('title') || '').slice(0, 80)
+    res.status(200).json({ photos: await getPhotos({ tourId: id, title, lat, lng }) })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }

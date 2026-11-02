@@ -7,8 +7,8 @@ async function get(path) {
 
 export const hello = () => get('/api/hello')
 export const fetchSpots = () => get('/api/spots')
-export const fetchPhotos = ({ tourId, lat, lng }) =>
-  get(tourId ? `/api/photos?id=${tourId}` : `/api/photos?lat=${lat}&lng=${lng}`)
+export const fetchPhotos = ({ tourId, title, lat, lng }) =>
+  get(`/api/photos?${tourId ? `id=${tourId}&` : ''}title=${encodeURIComponent(title)}&lat=${lat}&lng=${lng}`)
 export const fetchWeather = () => get('/api/weather')
 export async function sendChat(messages, moodLevel) {
   const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages, moodLevel }) })
@@ -23,3 +23,4 @@ export async function fetchLegs(points) {
   if (!r.ok) throw new Error('이동시간을 계산하지 못했어요')
   return (await r.json()).legs
 }
+export const fetchOlle = () => get('/api/olle')

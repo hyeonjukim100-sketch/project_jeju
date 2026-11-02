@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
-import { fetchLegs, fetchRoute, fetchSpots, fetchWeather } from '../api/client'
+import { fetchLegs, fetchOlle, fetchRoute, fetchSpots, fetchWeather } from '../api/client'
+import { spaceOf } from '../lib/space'
 
 // 로그인 오류를 읽기 쉬운 문장으로
 const authMessage = (error) => {
@@ -37,7 +38,7 @@ export const useAppStore = create((set, get) => ({
   loadSpots: async () => {
     if (get().spots.length) return
     try {
-      set({ spots: (await fetchSpots()).spots })
+      set({ spots: (await fetchSpots()).spots.map((s) => ({ ...s, space: spaceOf(s) })) })
     } catch (e) {
       get().toast(`관광지를 불러오지 못했어요: ${e.message}`, 'danger')
     }
@@ -85,7 +86,19 @@ export const useAppStore = create((set, get) => ({
   // 하루 동선 — 직접 담거나 기분에 맞춰 만든다. 한 곳씩 쌓이고, 구간별 이동시간은 서버(OSRM)가 계산한다.
   plan: { stops: [], legs: [] },
   planBusy: false,
-  panelTab: 'places', // 'places' | 'plan'
+  // 올레길: 코스 정보는 API(odcloud) 카드로만 보여 준다 (지도 선은 꺼 둠, OlleLines.jsx)
+  olle: [],
+  selectedOlle: null, // 코스 번호 (예: '7', '7-1')
+  loadOlle: async () => {
+    if (get().olle.length) return
+    try {
+      set({ olle: (await fetchOlle()).courses })
+    } catch {
+      get().toast('올레코스를 불러오지 못했어요', 'danger')
+    }
+  },
+  selectOlle: (selectedOlle) => set({ selectedOlle }),
+  panelTab: 'places', // 'places' | 'plan' | 'olle'
   setPanelTab: (panelTab) => set({ panelTab }),
   _setStops: async (stops) => {
     const token = (get()._legToken = (get()._legToken || 0) + 1)
