@@ -98,7 +98,7 @@ export const useAppStore = create((set, get) => ({
     }
   },
   selectOlle: (selectedOlle) => set({ selectedOlle }),
-  panelTab: 'places', // 'places' | 'plan' | 'olle'
+  panelTab: 'places', // 'places' | 'plan'
   setPanelTab: (panelTab) => set({ panelTab }),
   _setStops: async (stops) => {
     const token = (get()._legToken = (get()._legToken || 0) + 1)

@@ -47,7 +47,7 @@
 |---|---|
 | 관광지 소개·좌표 | 제주 관내 관광지 데이터 (odcloud) |
 | 관광지 사진 | 한국관광공사 TourAPI(KorService2) |
-| 올레길 | 올레코스 API 카드만 (지도 선은 OSM 12개 코스뿐이라 꺼 둠: src/components/OlleLines.jsx) |
+| 올레길 | 올레코스 API 카드 (장소 탭의 올레코스 칩 안, 지도 선은 OSM 12개 코스뿐이라 꺼 둠: src/components/OlleLines.jsx) |
 | 관광지 사진(TourAPI에 없을 때) | Visit Jeju API (제주관광공사) |
 | 올레길 | 제주 올레코스 현황 (odcloud) |
 | 날씨·공기·일출일몰 | Open-Meteo |

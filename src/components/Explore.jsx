@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import JejuMap3D from './JejuMap3D'
 import WeatherStrip from './WeatherStrip'
 import Emoji from './Emoji'
@@ -131,11 +131,17 @@ function Nearby({ spot }) {
 }
 
 // 올레길: 코스 정보 카드 (올레코스 API). 지도 선은 OlleLines.jsx 에 꺼 두었다
-function OllePanel() {
+function OlleCourses() {
   const { olle, selectedOlle, selectOlle, loadOlle } = useAppStore()
+  const top = useRef(null)
   useEffect(() => {
     loadOlle()
   }, [])
+  // 칩 목록이 길어서 카드가 아래에 숨으므로, 카드가 준비되면 그 위치로 내려간다
+  useEffect(() => {
+    const el = top.current
+    if (olle.length) el?.closest('.glass-panel')?.scrollTo({ top: el.offsetTop - 8 })
+  }, [olle.length])
   // 3코스·15코스처럼 A/B 가 있는 코스를 구분하려고 "번호|이름" 으로 고른다
   const keyOf = (c) => `${c.id}|${c.name}`
   const cur = olle.find((c) => keyOf(c) === selectedOlle)
@@ -147,8 +153,8 @@ function OllePanel() {
   const curEnds = cur && ends(cur.route)
 
   return (
-    <>
-      <p className="small text-secondary">제주 올레코스 현황(공공데이터포털)의 코스 정보예요. 걷기 전에 거리와 시간을 가늠해 보세요.</p>
+    <div ref={top}>
+      <p className="small text-secondary mt-3">제주 올레코스 현황(공공데이터포털)의 코스 정보예요. 걷기 전에 거리와 시간을 가늠해 보세요.</p>
       {cur && (
         <div className="olle-card">
           <div className="fw-semibold">
@@ -194,7 +200,7 @@ function OllePanel() {
           </li>
         ))}
       </ul>
-    </>
+    </div>
   )
 }
 
@@ -300,11 +306,13 @@ export default function Explore() {
 
   const kinds = useMemo(() => ['전체', '푸른 공간', '초록 공간', '사진 있는 곳', ...new Set(spots.map((s) => s.kind).filter(Boolean))], [spots])
   const shown = useMemo(() => {
-    if (kind === '전체') return spots
-    if (kind === '사진 있는 곳') return spots.filter((s) => s.tourId)
-    if (kind === '푸른 공간') return spots.filter((s) => s.space === 'blue')
-    if (kind === '초록 공간') return spots.filter((s) => s.space === 'green')
-    return spots.filter((s) => s.kind === kind)
+    // 관광지 데이터의 "제주올레 11코스" 핀이 우도(1-1코스와 같은 주소)에 찍혀 있다. 실제 11코스는 모슬포~무릉이라 틀린 위치여서 모든 보기에서 뺀다.
+    const ok = spots.filter((s) => s.title !== '제주올레 11코스')
+    if (kind === '전체') return ok
+    if (kind === '사진 있는 곳') return ok.filter((s) => s.tourId)
+    if (kind === '푸른 공간') return ok.filter((s) => s.space === 'blue')
+    if (kind === '초록 공간') return ok.filter((s) => s.space === 'green')
+    return ok.filter((s) => s.kind === kind)
   }, [spots, kind])
   const mood = MOOD_LEVELS[moodLevel]
 
@@ -324,14 +332,9 @@ export default function Explore() {
             <button type="button" role="tab" aria-selected={panelTab === 'plan'} className={panelTab === 'plan' ? 'on' : ''} onClick={() => setPanelTab('plan')}>
               하루 동선{plan.stops.length > 0 && ` ${plan.stops.length}`}
             </button>
-            <button type="button" role="tab" aria-selected={panelTab === 'olle'} className={panelTab === 'olle' ? 'on' : ''} onClick={() => setPanelTab('olle')}>
-              올레길
-            </button>
           </div>
 
-          {panelTab === 'olle' ? (
-            <OllePanel />
-          ) : panelTab === 'plan' ? (
+          {panelTab === 'plan' ? (
             <PlanTab spots={spots} />
           ) : spot ? (
             <>
@@ -373,6 +376,7 @@ export default function Explore() {
                   </button>
                 ))}
               </div>
+              {kind === '올레코스' && <OlleCourses />}
             </>
           )}
         </aside>

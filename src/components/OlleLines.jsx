@@ -9,10 +9,10 @@ import olleLines from '../data/olle-lines.json'
 import { useAppStore } from '../store/useAppStore'
 import { toScene } from './JejuMap3D'
 
-// 올레길 탭에서는 모든 코스를 옅게, 고른 코스는 굵게 그린다
+// 올레코스 칩에서 고른 코스만 굵게 그린다
 export default function OlleLines() {
-  const tab = useAppStore((s) => s.panelTab)
-  const selected = useAppStore((s) => s.selectedOlle)
+  // 카드에서 고른 값은 "번호|이름" 모양이라 번호만 뗀다 (3코스 A/B 는 같은 선을 쓴다)
+  const selected = useAppStore((s) => s.selectedOlle)?.split('|')[0] ?? null
   // 코스마다 여러 조각(segs)이다 — 끊긴 곳에는 선을 긋지 않는다
   const lines = useMemo(
     () =>
@@ -27,12 +27,12 @@ export default function OlleLines() {
       ]),
     [],
   )
-  if (tab !== 'olle' && !selected) return null
+  if (!selected) return null
   return (
     <group>
       {lines.map(([id, segs]) => {
         const on = id === selected
-        if (tab !== 'olle' && !on) return null
+        if (!on) return null
         return segs.map((pts, i) => (
           <Line key={`${id}-${i}`} points={pts} color={on ? '#E8590C' : '#2F9E6B'} lineWidth={on ? 5 : 2} transparent opacity={on || !selected ? 1 : 0.45} />
         ))
