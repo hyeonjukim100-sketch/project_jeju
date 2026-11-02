@@ -136,7 +136,15 @@ function OllePanel() {
   useEffect(() => {
     loadOlle()
   }, [])
-  const cur = olle.find((c) => c.id === selectedOlle)
+  // 3코스·15코스처럼 A/B 가 있는 코스를 구분하려고 "번호|이름" 으로 고른다
+  const keyOf = (c) => `${c.id}|${c.name}`
+  const cur = olle.find((c) => keyOf(c) === selectedOlle)
+  // "시작-끝" 으로 나뉘는 코스만 둘로 나눈다 (18-2 코스처럼 지점이 여럿이면 그대로 보여 준다)
+  const ends = (route) => {
+    const p = route.split('-')
+    return p.length === 2 ? { start: p[0].trim(), end: p[1].trim() } : null
+  }
+  const curEnds = cur && ends(cur.route)
 
   return (
     <>
@@ -146,23 +154,41 @@ function OllePanel() {
           <div className="fw-semibold">
             <Emoji name="footprints" size="1.1em" /> {cur.id}코스 · {cur.name}
           </div>
-          <div className="small">
+          <div className="small mb-1">
             {cur.km}km · {cur.time}
           </div>
-          <div className="small text-secondary">{cur.route}</div>
+          {curEnds ? (
+            <div className="olle-ends">
+              <div>
+                <span className="olle-pin start">시작</span> {curEnds.start}
+              </div>
+              <div>
+                <span className="olle-pin end">끝</span> {curEnds.end}
+              </div>
+            </div>
+          ) : (
+            <div className="small">
+              <span className="olle-pin start">지점</span> {cur.route}
+            </div>
+          )}
         </div>
       )}
       {olle.length === 0 && <div className="small text-secondary">올레코스를 불러오는 중…</div>}
       <ul className="olle-list">
         {olle.map((c) => (
-          <li key={`${c.id}-${c.name}`}>
-            <button type="button" className={`olle-item ${c.id === selectedOlle ? 'on' : ''}`} aria-pressed={c.id === selectedOlle} onClick={() => selectOlle(c.id === selectedOlle ? null : c.id)}>
+          <li key={keyOf(c)}>
+            <button type="button" className={`olle-item ${keyOf(c) === selectedOlle ? 'on' : ''}`} aria-pressed={keyOf(c) === selectedOlle} onClick={() => selectOlle(keyOf(c) === selectedOlle ? null : keyOf(c))}>
               <span className="olle-no">{c.id}</span>
               <span className="flex-grow-1 text-start">
                 {c.name}
                 <span className="small text-secondary d-block">
                   {c.km}km · {c.time}
                 </span>
+                {ends(c.route) && (
+                  <span className="small text-secondary d-block">
+                    {ends(c.route).start} → {ends(c.route).end}
+                  </span>
+                )}
               </span>
             </button>
           </li>

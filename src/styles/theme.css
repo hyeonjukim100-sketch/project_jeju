@@ -257,3 +257,9 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .dot.green { background: #6CC08F; }
 .dot.other { background: #F2A65A; }
 
+
+/* 올레길 카드: 시작·끝 */
+.olle-ends { display: grid; gap: .25rem; font-size: .92rem; }
+.olle-pin { display: inline-block; min-width: 2.6rem; margin-right: .4rem; padding: .05rem .6rem; border-radius: 999px; background: var(--strong); color: var(--strong-ink); font-size: .75rem; font-weight: 700; text-align: center; }
+.olle-pin.end { background: var(--accent); color: var(--ink); }
+.olle-item.on .olle-no { color: inherit; }
