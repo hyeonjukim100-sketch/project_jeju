@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { fetchBusLeg } from '../api/client'
-import { busMeta, moreLabel } from '../lib/busText'
+import { busMeta, moreLabel, noBusNote } from '../lib/busText'
 
 export const BUS_URL = 'https://bus.jeju.go.kr' // 제주버스정보시스템 (배차 간격·도착 시각)
 const TIMEOUT = 25000 // 서버가 느릴 때 몇 번 재시도하므로 넉넉히 기다리고, 그래도 안 오면 안내 문구로 넘어간다
@@ -13,6 +13,7 @@ export default function BusLegDetail({ from, to }) {
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState('idle') // idle | loading | done
   const [options, setOptions] = useState([])
+  const [reason, setReason] = useState(null) // 버스가 없을 때 이유 (서버가 알려 준다)
   const [expanded, setExpanded] = useState(false) // 처음엔 버스 1개만, "더 보기"로 나머지
 
   const load = () => {
@@ -24,7 +25,8 @@ export default function BusLegDetail({ from, to }) {
     Promise.race([fetchBusLeg(point(from), point(to)), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), TIMEOUT))])
       .then((r) => {
         setOptions(r.options || [])
-        setStatus('done')
+        setReason(r.reason || null)
+        setStatus(r.reason === 'error' ? 'error' : 'done')
       })
       .catch(() => setStatus('error')) // 잠깐의 끊김일 수 있으니 다시 눌러 불러올 수 있게 둔다
   }
@@ -44,7 +46,7 @@ export default function BusLegDetail({ from, to }) {
           {(status === 'idle' || status === 'loading') && <div className="bus-detail-note">버스를 찾는 중…</div>}
           {status === 'error' && (
             <div className="bus-detail-note">
-              버스 정보를 불러오지 못했어요.{' '}
+              {noBusNote('error')}{' '}
               <button type="button" className="bus-retry" onClick={load}>
                 다시 찾기
               </button>
@@ -72,10 +74,12 @@ export default function BusLegDetail({ from, to }) {
           )}
           {status === 'done' && options.length === 0 && (
             <div className="bus-detail-note">
-              직접 가는 버스를 찾지 못했어요. 환승이 필요할 수 있어요.{' '}
-              <a href={BUS_URL} target="_blank" rel="noreferrer">
-                제주버스정보시스템 <i className="bi bi-box-arrow-up-right" />
-              </a>
+              {noBusNote(reason)}{' '}
+              {reason !== 'near' && (
+                <a href={BUS_URL} target="_blank" rel="noreferrer">
+                  제주버스정보시스템 <i className="bi bi-box-arrow-up-right" />
+                </a>
+              )}
             </div>
           )}
         </div>

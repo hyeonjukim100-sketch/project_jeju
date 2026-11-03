@@ -99,3 +99,40 @@ test('getBusLeg only loads the stop list of routes that serve both ends', async 
   assert.deepEqual(asked, [1])
   assert.equal(r.options[0].number, '101')
 })
+
+const okDeps = {
+  nearStops: async (p) => (p.lat === 1 ? [{ id: 10, name: 'A', meters: 100 }] : [{ id: 12, name: 'B', meters: 50 }]),
+  stopRoutes: async () => [{ routeId: 1, number: '101', to: 'X' }],
+  routeStops: async () => [stop(10, 1), stop(12, 2)],
+  arrivals: async () => ({ routes: [] }),
+}
+
+test('getBusLeg says why there is no bus: no stop near one end', async () => {
+  const deps = { ...okDeps, nearStops: async (p) => (p.lat === 1 ? [{ id: 10, name: 'A', meters: 100 }] : []) }
+  const r = await getBusLeg({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, deps)
+  assert.deepEqual(r, { options: [], reason: 'no-stops' })
+})
+
+test('getBusLeg says the two places are close enough to walk without asking the bus service', async () => {
+  let asked = 0
+  const deps = { ...okDeps, nearStops: async () => (asked++, []) }
+  const r = await getBusLeg({ lat: 33.5, lng: 126.5 }, { lat: 33.503, lng: 126.502 }, deps)
+  assert.deepEqual(r, { options: [], reason: 'near' })
+  assert.equal(asked, 0)
+})
+
+test('getBusLeg tells a failed lookup apart from "no bus"', async () => {
+  const down = async () => {
+    throw new Error('connect timeout')
+  }
+  const r1 = await getBusLeg({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, { ...okDeps, nearStops: down })
+  assert.deepEqual(r1, { options: [], reason: 'error' })
+  const r2 = await getBusLeg({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, { ...okDeps, stopRoutes: down })
+  assert.deepEqual(r2, { options: [], reason: 'error' })
+})
+
+test('getBusLeg says "none" when stops exist but no direct bus serves both', async () => {
+  const deps = { ...okDeps, stopRoutes: async (id) => (id === '10' ? [{ routeId: 1, number: '101', to: 'X' }] : [{ routeId: 9, number: '909', to: 'Z' }]) }
+  const r = await getBusLeg({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, deps)
+  assert.deepEqual(r, { options: [], reason: 'none' })
+})

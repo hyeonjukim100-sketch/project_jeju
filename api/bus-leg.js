@@ -20,6 +20,6 @@ export default async function handler(req, res) {
     res.status(200).json(await getBusLeg({ lat: fromLat, lng: fromLng }, { lat: toLat, lng: toLng }))
   } catch (e) {
     console.error('bus-leg error:', String(e.message).slice(0, 120))
-    res.status(200).json({ options: [] })
+    res.status(200).json({ options: [], reason: 'error' })
   }
 }

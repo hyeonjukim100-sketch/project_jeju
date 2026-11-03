@@ -6,6 +6,8 @@ const NEAR_RADIUS = 1000 // m
 const NEAR_COUNT = 3 // 가까운 정류소 몇 곳까지 후보로
 const MAX_OPTIONS = 3
 const PARALLEL = 6
+const WALK_KM = 0.8 // 두 곳이 이만큼 가까우면 버스 대신 걸어가는 게 낫다
+const km = (a, b) => Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 92)
 
 // 정류장 수가 적고 걷는 거리가 짧을수록 좋다
 const score = (stops, board, alight) => stops + (board.meters + alight.meters) / 100
@@ -54,19 +56,25 @@ const near = (p) => getStopsNear(p.lat, p.lng, NEAR_RADIUS).then((l) => l.slice(
 const DEFAULT_DEPS = { nearStops: near, stopRoutes: getStopRoutes, routeStops: getRouteStops, arrivals: getStopArrivals }
 
 // deps 는 시험에서 가짜 조회 함수를 넣기 위한 자리다. 정류소·노선 하나의 조회가 실패해도 나머지로 계속한다.
+// 버스가 없을 때는 reason 으로 이유를 알려 준다: near 가까워서 걸어감 / no-stops 근처에 정류소 없음 / error 조회 실패 / none 직행 없음
 export async function getBusLeg(from, to, deps = DEFAULT_DEPS) {
-  const [board, alight] = await Promise.all([deps.nearStops(from), deps.nearStops(to)])
-  if (!board.length || !alight.length) return { options: [] }
+  if (km(from, to) < WALK_KM) return { options: [], reason: 'near' }
+  let board, alight
+  try {
+    ;[board, alight] = await Promise.all([deps.nearStops(from), deps.nearStops(to)])
+  } catch {
+    return { options: [], reason: 'error' }
+  }
+  if (!board.length || !alight.length) return { options: [], reason: 'no-stops' }
 
-  const [atBoard, atAlight] = await Promise.all([
-    mapLimit(board, (b) => deps.stopRoutes(String(b.id)).catch(() => [])),
-    mapLimit(alight, (a) => deps.stopRoutes(String(a.id)).catch(() => [])),
-  ])
+  let failed = false
+  const routesOf = (s) => deps.stopRoutes(String(s.id)).catch(() => ((failed = true), []))
+  const [atBoard, atAlight] = await Promise.all([mapLimit(board, routesOf), mapLimit(alight, routesOf)])
   const routesAtBoard = Object.fromEntries(board.map((b, i) => [b.id, atBoard[i]]))
   // 노선 ID 는 방향까지 정해져 있어서, 양쪽 정류소를 다 지나는 노선만 정류소 순서를 불러와도 된다 (호출 수를 크게 줄인다)
   const reachesAlight = new Set(atAlight.flat().map((r) => r.routeId))
   const routeIds = [...new Set(atBoard.flat().map((r) => r.routeId))].filter((id) => reachesAlight.has(id))
-  const stopLists = await mapLimit(routeIds, (id) => deps.routeStops(id).catch(() => []))
+  const stopLists = await mapLimit(routeIds, (id) => deps.routeStops(id).catch(() => ((failed = true), [])))
   const routeStops = Object.fromEntries(routeIds.map((id, i) => [id, stopLists[i]]))
 
   const options = findDirectRoutes({ board, alight, routesAtBoard, routeStops })
@@ -78,5 +86,5 @@ export async function getBusLeg(from, to, deps = DEFAULT_DEPS) {
       .catch(() => null)
     return { ...o, nextMin: minutes }
   })
-  return { options: withNext }
+  return withNext.length ? { options: withNext } : { options: [], reason: failed ? 'error' : 'none' }
 }

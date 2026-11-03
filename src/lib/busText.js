@@ -9,3 +9,11 @@ export function busMeta({ stops, nextMin }) {
 export function moreLabel(total, expanded) {
   return expanded ? '접기' : `버스 ${total - 1}개 더 보기`
 }
+
+// 버스를 못 찾았을 때 안내 문구 (이유별)
+export function noBusNote(reason) {
+  if (reason === 'no-stops') return '근처 1km 안에 버스 정류장이 없어요.'
+  if (reason === 'near') return '가까운 거리라 걸어가는 게 좋아요.'
+  if (reason === 'error') return '버스 정보를 잠시 불러오지 못했어요.'
+  return '직접 가는 버스를 찾지 못했어요. 환승이 필요할 수 있어요.'
+}
