@@ -769,3 +769,7 @@ p { text-wrap: pretty; }
   }
   .map-stage { height: calc(100dvh - var(--nav-h) - var(--foot-h, 3rem)); scroll-snap-align: start; }
 }
+
+/* ===== 동선: 이동 정보를 카드 안이 아니라 카드와 카드 사이에 ===== */
+.plan-list > li + li { margin-top: 0; }
+.route-card + .route-move { margin: 0 0 0 1.35rem; padding: .55rem 0 .55rem 1.1rem; border-top: 0; border-left: 2px dashed var(--line); }

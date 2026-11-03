@@ -324,13 +324,13 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo, mood = null }) {
                   </button>
                 )}
               </div>
-              {i < stops.length - 1 && (
-                <div className={`route-move ${!bus && legs[i] && legMin(legs[i]) > longLimit ? 'long' : ''}`}>
-                  <span className="route-move-text">{moveChip(legs[i])}</span>
-                  {bus && <BusLegDetail key={`${s.title}->${stops[i + 1].title}`} from={s} to={stops[i + 1]} />}
-                </div>
-              )}
             </div>
+            {i < stops.length - 1 && (
+              <div className={`route-move ${!bus && legs[i] && legMin(legs[i]) > longLimit ? 'long' : ''}`}>
+                <span className="route-move-text">{moveChip(legs[i])}</span>
+                {bus && <BusLegDetail key={`${s.title}->${stops[i + 1].title}`} from={s} to={stops[i + 1]} />}
+              </div>
+            )}
           </li>
         ))}
         {bus && stops.length > 0 && (
