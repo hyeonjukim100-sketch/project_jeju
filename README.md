@@ -8,6 +8,12 @@
 
 오늘의 기분을 고르면 3D 제주섬 위에서 그 기분에 어울리는 느린 하루 동선을 짜 주는 여행 추천 웹앱
 
+### 🔗 [projectjeju.vercel.app](https://projectjeju.vercel.app/)
+
+<img src="images/qr.png" alt="projectjeju.vercel.app 으로 연결되는 QR 코드" width="140" />
+
+휴대폰 카메라로 QR을 비추면 바로 열려요.
+
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![Three.js](https://img.shields.io/badge/Three.js-3D_map-000000?logo=threedotjs&logoColor=white)
