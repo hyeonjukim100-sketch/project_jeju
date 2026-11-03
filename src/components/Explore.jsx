@@ -13,11 +13,11 @@ import { fetchPlaces } from '../api/client'
 import { ratingsFor } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP } from '../lib/moods'
+import { activityName, routeTitle } from '../lib/routeTitle'
 import { useAppStore } from '../store/useAppStore'
 
 const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 시각을 계산한다
 const STAY = { spot: 60, meal: 60, rest: 40 } // 머무는 시간(분): 구경 60, 식사 60, 쉬어가기 40
-const STOP_LABEL = { spot: '구경', meal: '식사', rest: '쉬어가기' }
 const STOP_EMOJI = { meal: 'food', rest: 'coffee' }
 const LONG_WALK = 30 // 걷는 구간이 30분을 넘으면 많이 멀다고 알려 준다
 const BUS_URL = 'https://bus.jeju.go.kr' // 제주버스정보시스템 (배차 간격·도착 시각)
@@ -193,10 +193,11 @@ function OlleCourses() {
 }
 
 // 동선 목록 (내 동선은 고칠 수 있고, 추천 동선은 읽기만 된다)
-function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
+function RouteList({ stops, legs, editable, onOpen, hasInfo, mood = null }) {
   const { removeStop, moveStop, transport, setTransport } = useAppStore()
   const bus = transport === 'bus'
   const legMin = (l) => (transport === 'walk' ? l.walk ?? Math.round(l.km * 13.3) : l.minutes) // 걷기는 시속 4.5km 어림
+  const longLimit = transport === 'walk' ? LONG_WALK : LONG_LEG
 
   // 예상 시각: 시작 + (머문 시간 + 이동시간) 을 차례로 더한다
   const etas = useMemo(() => {
@@ -209,9 +210,38 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
   }, [stops, legs, transport])
   const driveTotal = legs.reduce((a, l) => a + legMin(l), 0)
   const endAt = stops.length ? etas.at(-1) + STAY[stops.at(-1).type] : START_MIN
+  const { chip, title } = routeTitle(stops, mood)
+
+  // 다음 곳까지의 이동 방법·시간·거리 (카드 안 칩)
+  const moveChip = (l) => {
+    if (!l) return '이동시간 계산 중…'
+    if (bus) {
+      return (
+        <>
+          <i className="bi bi-bus-front" /> 버스로 이동 <small>{l.km}km</small>
+        </>
+      )
+    }
+    const far = legMin(l) > longLimit
+    return (
+      <>
+        <i className={`bi ${transport === 'walk' ? 'bi-person-walking' : 'bi-car-front'}`} /> {transport === 'walk' ? '걸어서' : '차로'} 약 {hm(legMin(l))}{' '}
+        <small>({l.km}km){far && (transport === 'walk' ? ' · 많이 멀어요' : ' · 조금 멀어요')}</small>
+      </>
+    )
+  }
 
   return (
     <>
+      {stops.length > 0 && (
+        <div className="route-head">
+          {chip && <span className="route-mood">{chip}</span>}
+          <h3 className="route-title">{title}</h3>
+          <div className="route-sum">
+            {bus ? `총 ${stops.length}곳 · 버스 이동 거리 ${legs.reduce((a, l) => a + l.km, 0).toFixed(1)}km` : `총 ${stops.length}곳 · 이동 ${driveTotal}분 · ${clock(START_MIN)}에 시작하면 ${clock(endAt)}쯤 마쳐요`}
+          </div>
+        </div>
+      )}
       <div className="kind-chips mb-2" role="group" aria-label="이동 수단">
         {TRANSPORTS.map((t) => (
           <button key={t.key} type="button" aria-pressed={transport === t.key} className={`chip ${transport === t.key ? 'on' : ''}`} onClick={() => setTransport(t.key)}>
@@ -222,16 +252,34 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
       <ol className="plan-list">
         {stops.map((s, i) => (
           <li key={`${s.title}-${i}`}>
-            <div className="plan-row">
-              <span className="plan-no">{i + 1}</span>
-              <div className="flex-grow-1">
-                <div className="plan-time">
-                  {bus ? '' : `${clock(etas[i])} · `}{STOP_LABEL[s.type]} {STAY[s.type]}분
+            <div className="route-card">
+              <div className="route-card-top">
+                <span className="plan-no">{i + 1}</span>
+                <div className="route-card-main">
+                  <div className="route-act">{activityName(s)}</div>
+                  <button type="button" className="plan-title" onClick={() => onOpen(s)}>
+                    <Emoji name={STOP_EMOJI[s.type] || KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
+                  </button>
                 </div>
-                <button type="button" className="plan-title" onClick={() => onOpen(s)}>
-                  <Emoji name={STOP_EMOJI[s.type] || KIND_EMOJI[s.kind] || 'pin'} size="1.1em" /> {s.title}
-                </button>
-                <div className="small text-secondary">{s.kind}</div>
+                {editable && (
+                  <div className="plan-ctl">
+                    <button type="button" className="chip" onClick={() => moveStop(i, -1)} aria-label="위로" disabled={i === 0}>
+                      <i className="bi bi-arrow-up" />
+                    </button>
+                    <button type="button" className="chip" onClick={() => moveStop(i, 1)} aria-label="아래로" disabled={i === stops.length - 1}>
+                      <i className="bi bi-arrow-down" />
+                    </button>
+                    <button type="button" className="chip" onClick={() => removeStop(i)} aria-label="동선에서 빼기">
+                      <i className="bi bi-x-lg" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="route-chips">
+                <span className="route-chip">
+                  {bus ? '' : `${clock(etas[i])} · `}
+                  {STAY[s.type]}분 머물기
+                </span>
                 {s.url && (
                   <a className="chip plan-more text-decoration-none" href={s.url} target="_blank" rel="noreferrer">
                     카카오맵에서 보기 <i className="bi bi-box-arrow-up-right" />
@@ -243,37 +291,8 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
                   </button>
                 )}
               </div>
-              {editable && (
-                <div className="plan-ctl">
-                  <button type="button" className="chip" onClick={() => moveStop(i, -1)} aria-label="위로" disabled={i === 0}>
-                    <i className="bi bi-arrow-up" />
-                  </button>
-                  <button type="button" className="chip" onClick={() => moveStop(i, 1)} aria-label="아래로" disabled={i === stops.length - 1}>
-                    <i className="bi bi-arrow-down" />
-                  </button>
-                  <button type="button" className="chip" onClick={() => removeStop(i)} aria-label="동선에서 빼기">
-                    <i className="bi bi-x-lg" />
-                  </button>
-                </div>
-              )}
+              {i < stops.length - 1 && <div className={`route-move ${!bus && legs[i] && legMin(legs[i]) > longLimit ? 'long' : ''}`}>{moveChip(legs[i])}</div>}
             </div>
-            {i < stops.length - 1 && (
-              <div className={`plan-leg ${!bus && legs[i] && legMin(legs[i]) > (transport === 'walk' ? LONG_WALK : LONG_LEG) ? 'long' : ''}`}>
-                {legs[i] ? (
-                  bus ? (
-                    <>
-                      <i className="bi bi-bus-front" /> 버스로 이동 <small>{legs[i].km}km</small>
-                    </>
-                  ) : (
-                    <>
-                      <i className={`bi ${transport === 'walk' ? 'bi-person-walking' : 'bi-car-front'}`} /> {transport === 'walk' ? '걸어서' : '차로'} 약 {hm(legMin(legs[i]))} <small>({legs[i].km}km){legMin(legs[i]) > (transport === 'walk' ? LONG_WALK : LONG_LEG) && (transport === 'walk' ? ' · 많이 멀어요' : ' · 조금 멀어요')}</small>
-                    </>
-                  )
-                ) : (
-                  '이동시간 계산 중…'
-                )}
-              </div>
-            )}
           </li>
         ))}
         {bus && stops.length > 0 && (
@@ -285,7 +304,6 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
         )}
       </ol>
       <div className="plan-sum">
-        {bus ? `총 ${stops.length}곳 · 버스 이동 거리 ${legs.reduce((a, l) => a + l.km, 0).toFixed(1)}km` : `총 ${stops.length}곳 · 이동 ${driveTotal}분 · ${clock(START_MIN)}에 시작하면 ${clock(endAt)}쯤 마쳐요`}
         <div className="small text-secondary">
           {bus
             ? '버스는 거리만 보여 드려요. 배차 간격과 시간은 위 버스 버튼에서 제주버스정보시스템으로 확인해 주세요. 머무는 시간은 구경·식사 60분, 쉬어가기 40분이에요.'
@@ -297,7 +315,7 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo }) {
 }
 
 function PlanTab({ spots }) {
-  const { plan, recPlan, planView, setPlanView, planBusy, generatePlan, adoptRecPlan, clearPlan, selectSpot, setPanelTab, addStop, favs, user, onlyRoute, setOnlyRoute } = useAppStore()
+  const { plan, recPlan, planView, setPlanView, planBusy, generatePlan, adoptRecPlan, clearPlan, selectSpot, setPanelTab, addStop, favs, user, onlyRoute, setOnlyRoute, moodLevel } = useAppStore()
   const favList = Object.values(favs).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
   const info = (s) => spots.find((x) => x.title === s.title)
@@ -388,7 +406,7 @@ function PlanTab({ spots }) {
             <p className="small text-secondary mb-0">아직 추천이 없어요.</p>
           ) : (
             <>
-              <RouteList stops={recPlan.stops} legs={recPlan.legs} onOpen={open} hasInfo={info} />
+              <RouteList stops={recPlan.stops} legs={recPlan.legs} onOpen={open} hasInfo={info} mood={moodLevel} />
               <button type="button" className="btn-soft w-100" onClick={adoptRecPlan}>
                 {plan.stops.length > 0 ? '내 동선을 이 추천으로 바꾸기' : '이 동선으로 하기'}
               </button>
