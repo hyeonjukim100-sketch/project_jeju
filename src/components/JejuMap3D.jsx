@@ -4,6 +4,7 @@ import { Html, Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import dem from '../data/jeju-dem.json'
 import { SEASONS, season } from '../lib/season'
+import { mapWeather } from '../lib/mapWeather'
 import { KIND_EMOJI, KIND_GROUP } from '../lib/moods'
 import { useAppStore } from '../store/useAppStore'
 import DetailMap from './DetailMap'
@@ -439,13 +440,129 @@ function Stars() {
   )
 }
 
+// 눈송이 모양(동그란 점)
+const dotTexture = (() => {
+  let t
+  return () => {
+    if (t) return t
+    const c = document.createElement('canvas')
+    c.width = c.height = 32
+    const g = c.getContext('2d')
+    const grad = g.createRadialGradient(16, 16, 2, 16, 16, 15)
+    grad.addColorStop(0, 'rgba(255,255,255,1)')
+    grad.addColorStop(1, 'rgba(255,255,255,0)')
+    g.fillStyle = grad
+    g.fillRect(0, 0, 32, 32)
+    t = new THREE.CanvasTexture(c)
+    return t
+  }
+})()
+
+// 내리는 것: 장면 위쪽 상자에서 땅으로 떨어지고, 바닥에 닿으면 다시 위에서 시작한다
+const BOX = 9
+const TOP = 9
+const spread = () => (Math.random() * 2 - 1) * BOX
+
+function Rain({ count, color }) {
+  const head = useMemo(() => Float32Array.from({ length: count * 3 }, (_, i) => (i % 3 === 1 ? Math.random() * TOP : spread())), [count])
+  const line = useMemo(() => new Float32Array(count * 6), [count])
+  const geo = useRef()
+  useFrame((_, dt) => {
+    const d = Math.min(dt, 0.05)
+    for (let i = 0; i < count; i++) {
+      head[i * 3 + 1] -= 11 * d
+      head[i * 3] -= 1.2 * d
+      if (head[i * 3 + 1] < 0) { head[i * 3] = spread(); head[i * 3 + 1] = TOP; head[i * 3 + 2] = spread() }
+      line.set([head[i * 3], head[i * 3 + 1], head[i * 3 + 2], head[i * 3] + 0.1, head[i * 3 + 1] + 0.42, head[i * 3 + 2]], i * 6)
+    }
+    if (geo.current) geo.current.attributes.position.needsUpdate = true
+  })
+  return (
+    <lineSegments frustumCulled={false} raycast={() => null}>
+      <bufferGeometry ref={geo}>
+        <bufferAttribute attach="attributes-position" args={[line, 3]} />
+      </bufferGeometry>
+      <lineBasicMaterial color={color} transparent opacity={0.8} depthWrite={false} fog={false} />
+    </lineSegments>
+  )
+}
+
+function Snow({ count, color }) {
+  const pos = useMemo(() => Float32Array.from({ length: count * 3 }, (_, i) => (i % 3 === 1 ? Math.random() * TOP : spread())), [count])
+  const geo = useRef()
+  useFrame(({ clock }, dt) => {
+    const d = Math.min(dt, 0.05), t = clock.elapsedTime
+    for (let i = 0; i < count; i++) {
+      pos[i * 3 + 1] -= (0.7 + (i % 5) * 0.12) * d
+      pos[i * 3] += Math.sin(t * 0.8 + i) * 0.25 * d
+      if (pos[i * 3 + 1] < 0) { pos[i * 3] = spread(); pos[i * 3 + 1] = TOP; pos[i * 3 + 2] = spread() }
+    }
+    if (geo.current) geo.current.attributes.position.needsUpdate = true
+  })
+  return (
+    <points frustumCulled={false} raycast={() => null}>
+      <bufferGeometry ref={geo}>
+        <bufferAttribute attach="attributes-position" args={[pos, 3]} />
+      </bufferGeometry>
+      <pointsMaterial map={dotTexture()} color={color} size={8} sizeAttenuation={false} transparent opacity={1} depthWrite={false} alphaTest={0.05} fog={false} />
+    </points>
+  )
+}
+
+function Precip({ kind, night, narrow }) {
+  const rain = night ? '#9fb4ff' : '#dbe9ff'
+  const snow = night ? '#e8eeff' : '#ffffff'
+  const n = narrow ? 1 : 1.5
+  return (
+    <>
+      {(kind === 'rain' || kind === 'sleet') && <Rain count={Math.round((kind === 'sleet' ? 200 : 320) * n)} color={rain} />}
+      {(kind === 'snow' || kind === 'sleet') && <Snow count={Math.round((kind === 'sleet' ? 160 : 300) * n)} color={snow} />}
+    </>
+  )
+}
+
+// 구름: 섬을 가리지 않게 바다 바깥쪽에 띄운다
+function Clouds({ count, color }) {
+  const puffs = useMemo(() => Array.from({ length: count }, (_, i) => {
+    const a = i * 2.399, r = 7 + (i % 3) * 1.8
+    return { x: Math.cos(a) * r, z: Math.sin(a) * r - 1, y: 3.2 + (i % 4) * 0.45, s: 1.1 + (i % 3) * 0.4 }
+  }), [count])
+  return (
+    <group>
+      {puffs.map((p, i) => (
+        <group key={i} position={[p.x, p.y, p.z]} scale={p.s}>
+          {[[0, 0, 0, 1.4], [1.1, -0.1, 0.2, 1], [-1.1, -0.15, -0.1, 1.1]].map(([x, y, z, r], k) => (
+            <mesh key={k} position={[x, y, z]} scale={[1.5, 0.55, 1]}>
+              <sphereGeometry args={[r * 0.8, 14, 10]} />
+              <meshBasicMaterial color={color} transparent opacity={0.55} depthWrite={false} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  )
+}
+
 export default function JejuMap3D({ spots, weather }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
   const detail = useAppStore((s) => s.detail)
   const requestDetail = useAppStore((s) => s.requestDetail)
   const night = !!weather && !weather.isDay
+  const skyKind = weather?.sky
+  const wx = mapWeather(skyKind)
   const sc = SEASONS[season].scene
-  const pal = useMemo(() => (night ? DUSK : { sky: SEASONS[season].vars.bg, sea: sc.sea, land: greener(sc.land, '#8FD07E', 0.9), mount: greener(sc.mount, '#6DAE6E', 0.85), shallow: new THREE.Color(sc.sea).lerp(new THREE.Color('#ffffff'), 0.35).getStyle(), wash: WASH_DAY }), [night])
+  const pal = useMemo(() => {
+    const base = night ? DUSK : { sky: SEASONS[season].vars.bg, sea: sc.sea, land: greener(sc.land, '#8FD07E', 0.9), mount: greener(sc.mount, '#6DAE6E', 0.85), shallow: new THREE.Color(sc.sea).lerp(new THREE.Color('#ffffff'), 0.35).getStyle(), wash: WASH_DAY }
+    const g = wx.grey, snowC = night ? '#dfe8ff' : '#ffffff'
+    return {
+      sky: greener(base.sky, night ? '#1c2040' : '#aeb6bd', night ? g * 0.5 : g),
+      sea: greener(base.sea, night ? '#1f2f55' : '#8a98a3', night ? g * 0.4 : g * 0.5),
+      land: greener(base.land, snowC, wx.snowCover),
+      mount: greener(base.mount, snowC, wx.snowCover * 1.2),
+      shallow: base.shallow,
+      wash: base.wash.map((h) => greener(h, snowC, wx.snowCover)),
+    }
+  }, [night, skyKind])
   const sky = pal.sky
   const narrow = window.innerWidth < 640 // 세로로 긴 화면에서는 섬 전체가 보이게 뒤로 물러난다
 
@@ -453,12 +570,14 @@ export default function JejuMap3D({ spots, weather }) {
     <>
     <Canvas camera={{ position: narrow ? [0, 9, 12] : [0, 6, 8], fov: 45 }} raycaster={{ params: { Points: { threshold: 0.07 } } }} onPointerMissed={() => selectSpot(null)}>
       <color attach="background" args={[sky]} />
-      <fog attach="fog" args={[sky, 16, 34]} />
-      <hemisphereLight args={[sky, night ? '#5a5f9a' : '#d9c9a8', night ? 1.0 : 0.8]} />
+      <fog attach="fog" args={[sky, wx.fogNear, wx.fogFar]} />
+      <hemisphereLight args={[sky, night ? '#5a5f9a' : '#d9c9a8', (night ? 1.0 : 0.8) * (0.6 + 0.4 * wx.light)]} />
       <ambientLight intensity={night ? 0.8 : 0.6} />
-      <directionalLight position={[5, 8, 4]} color={night ? '#b8c4ff' : '#fff1dc'} intensity={night ? 0.7 : 1.0} />
+      <directionalLight position={[5, 8, 4]} color={night ? '#b8c4ff' : '#fff1dc'} intensity={(night ? 0.7 : 1.0) * wx.light} />
       <Sea color={pal.sea} />
       <Island land={pal.land} mount={pal.mount} shallow={pal.shallow} wash={pal.wash} />
+      {wx.clouds > 0 && <Clouds count={wx.clouds} color={night ? '#8a93c0' : greener('#ffffff', '#9aa3ab', wx.grey)} />}
+      {wx.precip && <Precip kind={wx.precip} night={night} narrow={narrow} />}
       {spots.length > 0 && <Pins spots={spots} />}
       <MapLabels />
       <RoutePath />
@@ -466,7 +585,7 @@ export default function JejuMap3D({ spots, weather }) {
       <CameraRig />
       <FitZoom />
     </Canvas>
-    {night && !detail && <Stars />}
+    {night && !detail && wx.grey < 0.3 && <Stars />}
     {detail ? (
       <DetailMap spots={spots} />
     ) : (
