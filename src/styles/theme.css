@@ -629,3 +629,13 @@ p { text-wrap: pretty; }
   .glass-panel { padding-bottom: 5.4rem; }
   .toast-stack { bottom: 5.4rem; }
 }
+
+/* 동선 맨 위: 사진 위에 정보를 얹은 큰 카드 */
+.route-head { position: relative; margin: .2rem 0 .8rem; min-height: 11rem; border-radius: 22px; overflow: hidden; background: var(--soft); display: flex; flex-direction: column; justify-content: flex-end; }
+.route-head-pic { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 1.6rem; }
+.route-head-pic img.route-head-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.route-head-info { position: relative; margin: 6.2rem .55rem .55rem; padding: .6rem .8rem .7rem; border-radius: 16px; background: var(--surface); }
+.route-head-info .route-title { margin-top: .3rem; }
+
+/* 장소 상세: "동선에 담기"를 크고 눈에 띄게 */
+.spot-sheet .btn-soft.w-100 { min-height: 52px; border: 0; border-radius: 999px; background: var(--strong); color: var(--strong-ink); font-weight: 800; font-size: 1rem; margin-top: .9rem !important; }

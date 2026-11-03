@@ -194,6 +194,29 @@ function OlleCourses() {
 }
 
 // 동선 목록 (내 동선은 고칠 수 있고, 추천 동선은 읽기만 된다)
+// 동선 맨 위 큰 카드의 배경 사진: 첫 곳의 사진 (없으면 종류 이모지)
+function RouteHeroPic({ stop }) {
+  const [url, setUrl] = useState(null)
+  useEffect(() => {
+    let live = true
+    setUrl(null)
+    if (stop?.title && Number.isFinite(stop.lat) && Number.isFinite(stop.lng)) {
+      fetchPhotos(stop)
+        .then((r) => live && setUrl(r.photos?.[0]?.url || null))
+        .catch(() => {})
+    }
+    return () => {
+      live = false
+    }
+  }, [stop?.title])
+  const emoji = STOP_EMOJI[stop?.type] || KIND_EMOJI[KIND_GROUP[stop?.kind]] || KIND_EMOJI[stop?.kind] || 'pin'
+  return (
+    <div className="route-head-pic">
+      {url ? <img className="route-head-photo" src={url} alt="" onError={() => setUrl(null)} /> : <Emoji name={emoji} size="3rem" />}
+    </div>
+  )
+}
+
 function RouteList({ stops, legs, editable, onOpen, hasInfo, mood = null }) {
   const { removeStop, moveStop, transport, setTransport } = useAppStore()
   const bus = transport === 'bus'
@@ -236,10 +259,13 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo, mood = null }) {
     <>
       {stops.length > 0 && (
         <div className="route-head">
-          {chip && <span className="route-mood">{chip}</span>}
-          <h3 className="route-title">{title}</h3>
-          <div className="route-sum">
-            {bus ? `총 ${stops.length}곳 · 버스 이동 거리 ${legs.reduce((a, l) => a + l.km, 0).toFixed(1)}km` : `총 ${stops.length}곳 · 이동 ${driveTotal}분 · ${clock(START_MIN)}에 시작하면 ${clock(endAt)}쯤 마쳐요`}
+          <RouteHeroPic stop={stops[0]} />
+          <div className="route-head-info">
+            {chip && <span className="route-mood">{chip}</span>}
+            <h3 className="route-title">{title}</h3>
+            <div className="route-sum">
+              {bus ? `총 ${stops.length}곳 · 버스 이동 거리 ${legs.reduce((a, l) => a + l.km, 0).toFixed(1)}km` : `총 ${stops.length}곳 · 이동 ${driveTotal}분 · ${clock(START_MIN)}에 시작하면 ${clock(endAt)}쯤 마쳐요`}
+            </div>
           </div>
         </div>
       )}
