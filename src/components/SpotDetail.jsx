@@ -35,19 +35,25 @@ export default function SpotDetail({ spot, onBack, onAdd, children }) {
     }
   }, [spot.id])
 
+  const wellness = isWellness(spot.title)
   const { lead, rest } = splitIntro(spot.intro)
   const photo = photos?.[idx]
   const emoji = TYPE_EMOJI[spot.type] || KIND_EMOJI[KIND_GROUP[spot.kind]] || KIND_EMOJI[spot.kind] || 'pin'
 
   const body = (
     <div className="spot-detail">
-      <div className="spot-hero">
+      <div className={`spot-hero ${wellness ? 'wellness' : ''}`}>
         {photo ? (
           <img className="spot-hero-img" src={photo.url} alt={spot.title} />
         ) : (
           <div className="spot-hero-empty">
             <Emoji name={emoji} size="3.2rem" />
             <span>{photos === null ? '사진을 찾는 중…' : '이곳의 사진은 아직 없어요'}</span>
+          </div>
+        )}
+        {wellness && (
+          <div className="hero-label">
+            <Emoji name="herb" size="1.1em" /> 제주 웰니스관광지
           </div>
         )}
         <button type="button" className="round-btn back" onClick={onBack} aria-label="뒤로가기">
@@ -70,11 +76,7 @@ export default function SpotDetail({ spot, onBack, onAdd, children }) {
           <Emoji name={emoji} size="1.1em" /> {categoryLabel(spot)}
         </span>
         {spot.space && <span className={`space-badge ${spot.space}`}>{SPACE_LABEL[spot.space]}</span>}
-        {isWellness(spot.title) && (
-          <span className="wellness-badge">
-            <Emoji name="herb" size="1.1em" /> 제주 웰니스관광지 <small>Visit Jeju 소개</small>
-          </span>
-        )}
+
         <h2 className="spot-name">{spot.title}</h2>
         {spot.address && <div className="spot-addr">{spot.address}</div>}
         {score !== undefined && (
@@ -94,6 +96,7 @@ export default function SpotDetail({ spot, onBack, onAdd, children }) {
           동선에 담기
         </button>
         {children}
+        {wellness && <div className="spot-credit">웰니스관광지 목록: Visit Jeju</div>}
         {photo && (
           <div className="spot-credit">
             사진: {photo.credit} ({photo.source})

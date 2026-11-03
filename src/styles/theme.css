@@ -595,6 +595,6 @@ p { text-wrap: pretty; }
   .foot-dot { display: none; }
 }
 
-/* ===== 제주 웰니스관광지 배지 (장소 설명 카드) ===== */
-.wellness-badge { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .3rem; margin: .35rem 0 0; padding: .15rem .75rem; border-radius: 999px; border: 1px solid var(--strong); background: var(--surface); color: var(--ink); font-size: .78rem; font-weight: 700; line-height: 1.4; }
-.wellness-badge small { font-size: .68rem; font-weight: 400; color: var(--sub); }
+/* ===== 제주 웰니스관광지 라벨 (사진 오른쪽 아래) ===== */
+.hero-label { position: absolute; right: .8rem; bottom: 2rem; z-index: 2; display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .7rem; border-radius: 999px; background: color-mix(in srgb, var(--surface) 94%, transparent); color: var(--ink); font-size: .75rem; font-weight: 700; line-height: 1.4; box-shadow: var(--shadow-soft); }
+.spot-hero.wellness .spot-hero-thumbs { right: 9.8rem; }
