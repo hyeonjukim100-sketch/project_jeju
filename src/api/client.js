@@ -23,6 +23,7 @@ export async function fetchLegs(points) {
   if (!r.ok) throw new Error('이동시간을 계산하지 못했어요')
   return (await r.json()).legs
 }
+export const fetchBusLeg = (from, to) => get(`/api/bus-leg?fromLat=${from.lat}&fromLng=${from.lng}&toLat=${to.lat}&toLng=${to.lng}`)
 export const fetchOlle = () => get('/api/olle')
 export const fetchSeason = (name) => get(`/api/season?name=${name}`)
 export async function fetchPlan(answers, moodLevel) {

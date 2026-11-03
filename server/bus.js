@@ -17,7 +17,7 @@ const arrivalCache = new Map()
 const stopCache = new Map()
 const ARRIVAL_TTL = 20 * 1000
 
-async function bisPost(path, params) {
+export async function bisPost(path, params) {
   const r = await fetch(`${BIS}/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -71,6 +71,31 @@ export async function getStopArrivals(stationId) {
   const data = { stop: j.stationNm, routes, runningCount: routes.length }
   arrivalCache.set(stationId, { at: Date.now(), data })
   return data
+}
+
+const routeCache = new Map() // stationId → { at, routes }
+const routeStopCache = new Map() // routeId → { at, stops }
+
+// 정류소에 서는 모든 노선(지금 운행 중인지는 상관없이). 방향이 정해진 노선 ID 단위.
+export async function getStopRoutes(stationId) {
+  const hit = routeCache.get(stationId)
+  if (hit && Date.now() - hit.at < TTL) return hit.routes
+  const j = await bisPost('getArriveScheduleByStationId', { stationId })
+  const routes = (j.routeInfoList || []).map((r) => ({ routeId: r.routeId, number: r.routeNum, to: r.dstNm }))
+  routeCache.set(stationId, { at: Date.now(), routes })
+  return routes
+}
+
+// 노선 하나의 정류소를 순서대로
+export async function getRouteStops(routeId) {
+  const hit = routeStopCache.get(routeId)
+  if (hit && Date.now() - hit.at < TTL) return hit.stops
+  const r = await fetch(`https://bus.jeju.go.kr/api/searchBusRouteStationList.do?route_id=${routeId}`, { signal: AbortSignal.timeout(8000) })
+  if (!r.ok) throw new Error(`bus.jeju.go.kr ${r.status}`)
+  const rows = await r.json()
+  const stops = (Array.isArray(rows) ? rows : []).map((x) => ({ id: x.STATION_ID, name: x.STATION_NM, ord: x.STATION_ORD }))
+  routeStopCache.set(routeId, { at: Date.now(), stops })
+  return stops
 }
 
 export async function getBusRoutes() {
