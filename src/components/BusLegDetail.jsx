@@ -3,7 +3,7 @@ import { fetchBusLeg } from '../api/client'
 import { busMeta, moreLabel } from '../lib/busText'
 
 export const BUS_URL = 'https://bus.jeju.go.kr' // 제주버스정보시스템 (배차 간격·도착 시각)
-const TIMEOUT = 15000 // 서버가 8초 안에 답하지만, 그래도 안 오면 안내 문구로 넘어간다
+const TIMEOUT = 25000 // 서버가 느릴 때 몇 번 재시도하므로 넉넉히 기다리고, 그래도 안 오면 안내 문구로 넘어간다
 
 const isPoint = (p) => Number.isFinite(Number(p?.lat)) && Number.isFinite(Number(p?.lng))
 const point = (p) => ({ lat: Number(p.lat), lng: Number(p.lng) })

@@ -98,7 +98,7 @@ export const TOOLS = [
     name: 'get_bus_arrivals',
     description:
       '정류소 한 곳에 곧 도착하는 버스를 번호별로 가장 빠른 한 대씩, 빠른 순서로 줍니다 (minutes 는 예상 도착까지 분). routes 가 비어 있으면 지금 운행 중인 버스가 없다는 뜻입니다. 정류소 id 는 find_bus_stops_near 결과의 id 입니다.',
-    parameters: { type: 'object', properties: { station_id: { type: 'number', description: '정류소 id' } }, required: ['station_id'] },
+    parameters: { type: 'object', properties: { station_id: { type: 'string', description: '정류소 id (예: JEB405002100)' } }, required: ['station_id'] },
     run: async ({ station_id } = {}) => {
       if (!station_id) return { error: '정류소 id 가 필요해요' }
       const a = await getStopArrivals(String(station_id))

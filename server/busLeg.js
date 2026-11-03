@@ -58,9 +58,14 @@ export async function getBusLeg(from, to, deps = DEFAULT_DEPS) {
   const [board, alight] = await Promise.all([deps.nearStops(from), deps.nearStops(to)])
   if (!board.length || !alight.length) return { options: [] }
 
-  const atBoard = await mapLimit(board, (b) => deps.stopRoutes(String(b.id)).catch(() => []))
+  const [atBoard, atAlight] = await Promise.all([
+    mapLimit(board, (b) => deps.stopRoutes(String(b.id)).catch(() => [])),
+    mapLimit(alight, (a) => deps.stopRoutes(String(a.id)).catch(() => [])),
+  ])
   const routesAtBoard = Object.fromEntries(board.map((b, i) => [b.id, atBoard[i]]))
-  const routeIds = [...new Set(atBoard.flat().map((r) => r.routeId))]
+  // 노선 ID 는 방향까지 정해져 있어서, 양쪽 정류소를 다 지나는 노선만 정류소 순서를 불러와도 된다 (호출 수를 크게 줄인다)
+  const reachesAlight = new Set(atAlight.flat().map((r) => r.routeId))
+  const routeIds = [...new Set(atBoard.flat().map((r) => r.routeId))].filter((id) => reachesAlight.has(id))
   const stopLists = await mapLimit(routeIds, (id) => deps.routeStops(id).catch(() => []))
   const routeStops = Object.fromEntries(routeIds.map((id, i) => [id, stopLists[i]]))
 

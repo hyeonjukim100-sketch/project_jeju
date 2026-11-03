@@ -80,3 +80,22 @@ test('getBusLeg gives nextMin null when arrivals fail', async () => {
   const r = await getBusLeg({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, deps)
   assert.equal(r.options[0].nextMin, null)
 })
+
+test('getBusLeg only loads the stop list of routes that serve both ends', async () => {
+  const asked = []
+  const deps = {
+    nearStops: async (p) => (p.lat === 1 ? [{ id: 10, name: 'A', meters: 100 }] : [{ id: 12, name: 'B', meters: 50 }]),
+    stopRoutes: async (id) =>
+      id === '10'
+        ? [{ routeId: 1, number: '101', to: 'X' }, { routeId: 2, number: '202', to: 'Y' }]
+        : [{ routeId: 1, number: '101', to: 'X' }, { routeId: 3, number: '303', to: 'Z' }],
+    routeStops: async (id) => {
+      asked.push(id)
+      return [stop(10, 1), stop(12, 2)]
+    },
+    arrivals: async () => ({ routes: [] }),
+  }
+  const r = await getBusLeg({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, deps)
+  assert.deepEqual(asked, [1])
+  assert.equal(r.options[0].number, '101')
+})
