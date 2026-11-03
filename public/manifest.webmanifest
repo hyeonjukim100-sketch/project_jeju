@@ -1,0 +1,14 @@
+{
+  "name": "느린 제주 마음지도",
+  "short_name": "마음지도",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#FDF6ED",
+  "background_color": "#FDF6ED",
+  "icons": [
+    { "src": "/images/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/images/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
