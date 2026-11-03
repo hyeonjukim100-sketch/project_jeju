@@ -6,6 +6,7 @@ import WeatherStrip from './WeatherStrip'
 import Emoji from './Emoji'
 import CitrusRating from './CitrusRating'
 import FavButton from './FavButton'
+import BusLegDetail, { BUS_URL } from './BusLegDetail'
 import ReviewBox from './ReviewBox'
 import SpotDetail from './SpotDetail'
 import TripRecord from './TripRecord'
@@ -20,7 +21,6 @@ const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 �
 const STAY = { spot: 60, meal: 60, rest: 40 } // 머무는 시간(분): 구경 60, 식사 60, 쉬어가기 40
 const STOP_EMOJI = { meal: 'food', rest: 'coffee' }
 const LONG_WALK = 30 // 걷는 구간이 30분을 넘으면 많이 멀다고 알려 준다
-const BUS_URL = 'https://bus.jeju.go.kr' // 제주버스정보시스템 (배차 간격·도착 시각)
 // 60분이 넘으면 "6시간 37분" 처럼 읽기 쉽게
 const hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ` ${m % 60}분` : ''}` : `${m}분`)
 const TRANSPORTS = [
@@ -291,7 +291,12 @@ function RouteList({ stops, legs, editable, onOpen, hasInfo, mood = null }) {
                   </button>
                 )}
               </div>
-              {i < stops.length - 1 && <div className={`route-move ${!bus && legs[i] && legMin(legs[i]) > longLimit ? 'long' : ''}`}>{moveChip(legs[i])}</div>}
+              {i < stops.length - 1 && (
+                <div className={`route-move ${!bus && legs[i] && legMin(legs[i]) > longLimit ? 'long' : ''}`}>
+                  <span className="route-move-text">{moveChip(legs[i])}</span>
+                  {bus && <BusLegDetail key={`${s.title}->${stops[i + 1].title}`} from={s} to={stops[i + 1]} />}
+                </div>
+              )}
             </div>
           </li>
         ))}

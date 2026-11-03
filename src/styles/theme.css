@@ -554,3 +554,16 @@ p { text-wrap: pretty; }
 .route-move i { color: var(--strong); font-size: 1.1rem; }
 .route-move small { font-weight: 400; color: var(--sub); font-size: .82rem; }
 .route-move.long { color: #9A4A2C; }
+
+/* ===== 리디자인: 버스 구간 세부정보 ===== */
+.route-move-text { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
+.route-move .bus-detail-btn { min-height: 32px; padding: .1rem .7rem; font-size: .8rem; font-weight: 600; }
+.bus-detail { flex-basis: 100%; margin-top: .2rem; padding: .6rem .8rem; border-radius: 16px; background: var(--soft); font-size: .85rem; font-weight: 400; }
+.bus-detail-note { line-height: 1.6; }
+.bus-detail-note a { color: var(--ink); font-weight: 700; }
+.bus-opts { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.bus-opt-head { font-size: .9rem; line-height: 1.5; }
+.bus-opt-head b { font-size: 1rem; }
+.bus-opt-stops { margin-top: .1rem; line-height: 1.6; }
+.bus-opt small, .bus-detail small { color: var(--sub); font-size: .8rem; }
+.bus-detail i { color: var(--strong); font-size: 1rem; }
