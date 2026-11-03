@@ -30,6 +30,7 @@ function LoginEntry() {
 export default function Home() {
   const { hash } = useLocation()
   const navigate = useNavigate()
+  const openRecForMood = useAppStore((s) => s.openRecForMood)
 
   useEffect(() => {
     scrollTo(hash.slice(1) || 'hero')
@@ -41,6 +42,12 @@ export default function Home() {
     scrollTo('explore')
   }
 
+  // 기분을 골라 넘어갈 때만 추천 동선을 함께 불러온다 (아래로 스크롤하는 화살표는 그대로 이동만)
+  const chooseMood = () => {
+    goExplore()
+    openRecForMood()
+  }
+
   return (
     <>
       <section id="hero" className="hero">
@@ -48,7 +55,7 @@ export default function Home() {
           <h1>오늘의 기분은 어떤가요?</h1>
           <p>아래 동그란 점을 좌우로 밀어 기분을 알려 주세요. 기분에 맞는 여행 코스를 추천해 드려요.</p>
         </div>
-        <MoodSlider onDone={goExplore} />
+        <MoodSlider onDone={chooseMood} />
         <MongsumiHero />
         <LoginEntry />
         <button type="button" className="scroll-hint" onClick={goExplore}>

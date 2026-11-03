@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { fetchLegs, fetchOlle, fetchRoute, fetchSeason, fetchSpots, fetchWeather } from '../api/client'
+import { needsRecPlan } from '../lib/recPlan'
 import { spaceOf } from '../lib/space'
 import { addFavorite, listFavorites, removeFavorite } from '../lib/reviews'
 
@@ -196,6 +197,12 @@ export const useAppStore = create((set, get) => ({
     } finally {
       set({ planBusy: false })
     }
+  },
+  // 첫 화면에서 기분을 고르고 넘어올 때: 추천 동선 탭을 열고, 같은 기분으로 만든 게 없을 때만 새로 만든다
+  openRecForMood: async () => {
+    set({ planView: 'rec', panelTab: 'plan', selectedSpot: null })
+    const { recPlan, moodLevel, planBusy } = get()
+    if (needsRecPlan(recPlan, moodLevel, planBusy)) await get().generatePlan()
   },
   adoptRecPlan: () => {
     const { stops, legs } = get().recPlan

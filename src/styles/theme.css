@@ -582,3 +582,15 @@ p { text-wrap: pretty; }
   .app-notice { padding: .25rem .8rem; font-size: .68rem; line-height: 1.4; }
   .app-notice .credit { font-size: .6rem; }
 }
+
+/* 모바일 푸터 2차: 출처는 다음 줄로, 글자는 9~10px */
+@media (max-width: 640px) {
+  .app-notice { font-size: .625rem; }
+  .app-notice .credit { display: block; font-size: .5625rem; }
+  .credit-dot { display: none; }
+}
+.m-br { display: none; }
+@media (max-width: 640px) {
+  .m-br { display: inline; }
+  .foot-dot { display: none; }
+}
