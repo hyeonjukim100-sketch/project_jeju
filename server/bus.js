@@ -11,6 +11,68 @@ export const busKey = () => {
   return k
 }
 
+// 정류소 위치·도착 정보: 제주버스정보시스템(bus.jeju.go.kr) 누리집이 화면에서 쓰는 주소. 키는 필요 없지만 공식 공개 API는 아니라 바뀔 수 있다.
+const BIS = 'https://bus.jeju.go.kr/data/search'
+const arrivalCache = new Map()
+const stopCache = new Map()
+const ARRIVAL_TTL = 20 * 1000
+
+async function bisPost(path, params) {
+  const r = await fetch(`${BIS}/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(params),
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!r.ok) throw new Error(`bus.jeju.go.kr ${r.status}`)
+  return r.json()
+}
+
+const meters = (aLat, aLng, bLat, bLng) => {
+  const rad = Math.PI / 180
+  const dLat = (bLat - aLat) * rad
+  const dLng = (bLng - aLng) * rad
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * rad) * Math.cos(bLat * rad) * Math.sin(dLng / 2) ** 2
+  return Math.round(2 * 6371000 * Math.asin(Math.sqrt(h)))
+}
+
+// 좌표 주변(기본 600m) 정류소를 가까운 순서로
+export async function getStopsNear(lat, lng, radius = 600) {
+  const key = `${lat.toFixed(4)},${lng.toFixed(4)},${radius}`
+  const hit = stopCache.get(key)
+  if (hit && Date.now() - hit.at < TTL) return hit.stops
+  const dLat = radius / 111000
+  const dLng = radius / (111000 * Math.cos((lat * Math.PI) / 180))
+  const rows = await bisPost('stationListByBounds', {
+    southWestLat: lat - dLat,
+    southWestLng: lng - dLng,
+    northEastLat: lat + dLat,
+    northEastLng: lng + dLng,
+  })
+  const stops = (Array.isArray(rows) ? rows : [])
+    .map((s) => ({ id: s.stationId, name: s.stationNm, lat: s.localY, lng: s.localX, meters: meters(lat, lng, s.localY, s.localX) }))
+    .filter((s) => s.meters <= radius)
+    .sort((a, b) => a.meters - b.meters)
+  stopCache.set(key, { at: Date.now(), stops })
+  return stops
+}
+
+// 정류소 한 곳을 지나는 노선과 가장 가까운 버스의 예상 도착
+export async function getStopArrivals(stationId) {
+  const hit = arrivalCache.get(stationId)
+  if (hit && Date.now() - hit.at < ARRIVAL_TTL) return hit.data
+  const j = await bisPost('getArriveScheduleByStationId', { stationId })
+  // 운행 중인 버스만, 같은 번호는 가장 빠른 한 대만, 빠른 순서로
+  const running = (j.routeInfoList || []).filter((r) => r.predictTravTm > 0).sort((a, b) => a.predictTravTm - b.predictTravTm)
+  const seen = new Set()
+  const routes = running
+    .filter((r) => !seen.has(r.routeNum) && seen.add(r.routeNum))
+    .map((r) => ({ number: r.routeNum, to: r.dstNm, minutes: r.predictTravTm }))
+  const data = { stop: j.stationNm, routes, runningCount: routes.length }
+  arrivalCache.set(stationId, { at: Date.now(), data })
+  return data
+}
+
 export async function getBusRoutes() {
   if (cache && Date.now() - cache.at < TTL) return cache.routes
   const rows = []

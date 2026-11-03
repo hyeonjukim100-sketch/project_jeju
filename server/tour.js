@@ -33,7 +33,35 @@ const TTL = 6 * 60 * 60 * 1000
 // 그리고 관광지 데이터에서 위치가 잘못 찍힌 "제주올레 11코스"(우도에 찍혀 있으나 실제 11코스는 모슬포~무릉)
 const HIDDEN_KINDS = ['의료', '축제', '축제/행사']
 const NOT_TRAVEL = /초등학교|분교|여객선|의원|병원|치과|한의원|피부과|약국/
-const isTravel = (s) => !HIDDEN_KINDS.includes(s.kind) && !(s.kind === '기타' && NOT_TRAVEL.test(s.title)) && s.title !== '제주올레 11코스'
+const HIDDEN_TITLES = ['제주올레 11코스', '삼양방파제'] // 삼양방파제: 주소·좌표가 성산일출봉 것으로 잘못 들어 있음
+const isTravel = (s) => !HIDDEN_KINDS.includes(s.kind) && !(s.kind === '기타' && NOT_TRAVEL.test(s.title)) && !HIDDEN_TITLES.includes(s.title)
+
+// 원본 좌표가 틀린 곳은 카카오 로컬 검색 값으로 덮어쓴다 (2026-11-03 확인)
+// 성산일출봉: 서쪽 한림 쪽에 찍혀 있었음 / 산방산·산방굴사: 추자도(위도 33.96)로 찍혀 있었으나 실제는 안덕면
+const FIXES = {
+  성산일출봉: { lat: 33.459135, lng: 126.940538 },
+  산방산: { lat: 33.241564, lng: 126.31337, address: '제주특별자치도 서귀포시 안덕면 사계리' },
+  산방굴사: { lat: 33.237963, lng: 126.313091, address: '제주특별자치도 서귀포시 안덕면 사계리' },
+  // 아래는 전수 검토(docs/coord-check.md)에서 카카오 이름·종류·주소가 모두 맞아 보정한 곳. 오름·행사·이름이 겹치는 곳은 제외
+  '단산과 방사탑': { lat: 33.2417, lng: 126.28261, address: '제주특별자치도 서귀포시 대정읍 인성리' },
+  제주곶자왈도립공원: { lat: 33.28895, lng: 126.27172, address: '제주특별자치도 서귀포시 대정읍 에듀시티로 178' },
+  감사공묘역: { lat: 33.51301, lng: 126.66086, address: '제주특별자치도 제주시 조천읍 함대로 362' },
+  화북비석거리: { lat: 33.52042, lng: 126.5605, address: '제주특별자치도 제주시 화북일동 4008' },
+  삼성혈: { lat: 33.50443, lng: 126.52876, address: '제주특별자치도 제주시 삼성로 22' },
+  '중문리 신사터': { lat: 33.25361, lng: 126.42103, address: '제주특별자치도 서귀포시 천제연로 149' },
+  산지천갤러리: { lat: 33.51515, lng: 126.52833, address: '제주특별자치도 제주시 중앙로3길 36' },
+  온평리포구: { lat: 33.40166, lng: 126.90284, address: '제주특별자치도 서귀포시 성산읍 온평리' },
+  성읍민속마을: { lat: 33.39999, lng: 126.80609, address: '제주특별자치도 서귀포시 표선면 서성일로 109' },
+  북촌환해장성: { lat: 33.55259, lng: 126.70117, address: '제주특별자치도 제주시 조천읍 북촌리 393-3' },
+  망장포: { lat: 33.2592, lng: 126.63969, address: '제주특별자치도 서귀포시 남원읍 하례리' },
+  세계술박물관: { lat: 33.35397, lng: 126.81761, address: '제주특별자치도 서귀포시 표선면 한마음초등로 431' },
+  영모원: { lat: 33.47201, lng: 126.41734, address: '제주특별자치도 제주시 애월읍 하귀1리 1134-1' },
+  비자림: { lat: 33.49041, lng: 126.80999, address: '제주특별자치도 제주시 구좌읍 비자숲길 55' },
+  서귀포층패류화석산지: { lat: 33.23952, lng: 126.55805, address: '제주특별자치도 서귀포시 남성중로 43' },
+  마라도관광쉼터: { lat: 33.11411, lng: 126.26844, address: '제주특별자치도 서귀포시 대정읍 마라로 131' },
+  무릉곶자왈: { lat: 33.29154, lng: 126.26254, address: '제주특별자치도 서귀포시 대정읍 무릉리 산 1' },
+  상추자항: { lat: 33.96221, lng: 126.29748, address: '제주특별자치도 제주시 추자면 추자로 1' },
+}
 
 export async function getSpots() {
   if (cache && Date.now() - cache.at < TTL) return cache.spots
@@ -48,6 +76,7 @@ export async function getSpots() {
       address: r['소재지도로명주소'] || r['소재지지번주소'] || '',
       intro: r['관광지소개'] || '',
     }))
+    .map((sp) => ({ ...sp, ...FIXES[sp.title] }))
     .map((sp) => ({ ...sp, tourId: nearestTourId(sp, tourSpots) }))
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && s.lat > 33 && s.lat < 34)
     .filter(isTravel)

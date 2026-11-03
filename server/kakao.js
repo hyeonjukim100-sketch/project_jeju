@@ -19,6 +19,16 @@ const compact = (d) => ({
   distance: Number(d.distance) || 0,
 })
 
+// 이름으로 장소 하나의 위치를 찾는다 (관광지 목록에 없는 곳용). 제주로 한정해 검색.
+export async function findPlace(name) {
+  const url = new URL(`${BASE}/keyword.json`)
+  url.search = new URLSearchParams({ query: `제주 ${name}`, size: 1 })
+  const r = await fetch(url, { headers: headers() })
+  if (!r.ok) throw new Error(`kakao ${r.status}`)
+  const d = (await r.json()).documents[0]
+  return d ? { title: d.place_name, lat: Number(d.y), lng: Number(d.x) } : null
+}
+
 // category: 'CE7'(카페) | 'FD6'(음식점), 또는 keyword (예: '전통찻집')
 export async function nearbyPlaces({ lat, lng, category, keyword, radius = 3000, size = 8 }) {
   const url = new URL(`${BASE}/${keyword ? 'keyword' : 'category'}.json`)

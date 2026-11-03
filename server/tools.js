@@ -1,5 +1,6 @@
 // 에이전트가 쓰는 도구. 모델에는 이름·설명·인자 모양만 보이고, 실제 실행은 여기서 한다.
-import { getBusRoutes } from './bus.js'
+import { getBusRoutes, getStopArrivals, getStopsNear } from './bus.js'
+import { findPlace } from './kakao.js'
 import { getOlleCourses } from './olle.js'
 import { getSpots } from './tour.js'
 import { getWeather } from './weather.js'
@@ -65,7 +66,7 @@ export const TOOLS = [
   {
     name: 'search_bus_routes',
     description:
-      '제주 버스 노선을 찾습니다. 노선 번호, 출발·종점 정류소 이름, 정류소 수, 노선 거리(km)를 줍니다. 장소별 정류소 위치나 도착 시각, 배차 간격은 알 수 없으니 지어내지 말고 제주버스정보시스템 앱에서 확인하라고 안내합니다.',
+      '제주 버스 노선을 찾습니다. 노선 번호, 출발·종점 정류소 이름, 정류소 수, 노선 거리(km)를 줍니다. 관광지 근처 정류소와 도착 시간은 find_bus_stops_near, get_bus_arrivals 로 확인합니다. 배차 간격은 알 수 없으니 지어내지 말고 제주버스정보시스템 앱에서 확인하라고 안내합니다.',
     parameters: {
       type: 'object',
       properties: {
@@ -76,6 +77,32 @@ export const TOOLS = [
       let list = await getBusRoutes()
       if (keyword) list = list.filter((r) => `${r.number} ${r.name} ${r.from} ${r.to}`.includes(keyword))
       return { matched: list.length, routes: list.slice(0, 8) }
+    },
+  },
+  {
+    name: 'find_bus_stops_near',
+    description:
+      '장소 근처 버스 정류소를 가까운 순서로 최대 5곳 찾습니다. 정류소 이름, 걸어서 가야 하는 거리(m), 정류소 id 를 줍니다. place 에는 사용자가 말한 장소 이름을 그대로 넣으면 됩니다 (관광지 목록에 없어도 됩니다). 도착 시각은 get_bus_arrivals 로 확인합니다.',
+    parameters: { type: 'object', properties: { place: { type: 'string', description: '장소 이름 (예: 성산일출봉, 제주공항)' } }, required: ['place'] },
+    run: async ({ place } = {}) => {
+      if (!place) return { error: '장소 이름이 필요해요' }
+      // 관광지 목록의 좌표가 틀린 곳이 있어(예: 성산일출봉) 카카오 위치를 먼저 쓰고, 안 되면 목록으로
+      let p = await findPlace(place).catch(() => null)
+      if (!p) p = (await getSpots()).find((x) => x.title === place || x.title.includes(place))
+      if (!p?.lat || !p?.lng) return { error: '그 장소의 위치를 찾지 못했어요' }
+      const stops = await getStopsNear(Number(p.lat), Number(p.lng), 1000)
+      return stops.length ? { place: p.title, stops: stops.slice(0, 5).map(({ id, name, meters }) => ({ id, name, meters })) } : { place: p.title, stops: [], note: '1km 안에 정류소가 없어요' }
+    },
+  },
+  {
+    name: 'get_bus_arrivals',
+    description:
+      '정류소 한 곳에 곧 도착하는 버스를 번호별로 가장 빠른 한 대씩, 빠른 순서로 줍니다 (minutes 는 예상 도착까지 분). routes 가 비어 있으면 지금 운행 중인 버스가 없다는 뜻입니다. 정류소 id 는 find_bus_stops_near 결과의 id 입니다.',
+    parameters: { type: 'object', properties: { station_id: { type: 'number', description: '정류소 id' } }, required: ['station_id'] },
+    run: async ({ station_id } = {}) => {
+      if (!station_id) return { error: '정류소 id 가 필요해요' }
+      const a = await getStopArrivals(String(station_id))
+      return { stop: a.stop, routes: a.routes.slice(0, 4) }
     },
   },
 ]
