@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { fetchPlan, sendChat } from '../api/client'
 import { hasCrisisSignal } from '../lib/crisis'
+import { routeTitle } from '../lib/routeTitle'
 import { useAppStore } from '../store/useAppStore'
 import { MongsumiFace } from './Mongsumi'
 
@@ -276,8 +277,10 @@ function CourseCard({ course }) {
   const addStops = useAppStore((s) => s.addStops)
   const setTransport = useAppStore((s) => s.setTransport)
   const setPanelTab = useAppStore((s) => s.setPanelTab)
+  const moodLevel = useAppStore((s) => s.moodLevel)
+  const { chip, title } = routeTitle(stops, moodLevel)
 
-  const leg = (l) => (mode === 'bus' ? `🚌 버스로 이동 ${l.km}km` : mode === 'walk' ? `🚶 걸어서 약 ${hm(l.walk)} (${l.km}km)${l.walk > 30 ? ' · 많이 멀어요' : ''}` : `🚗 차로 약 ${l.minutes}분 (${l.km}km)`)
+  const leg =(l) => (mode === 'bus' ? `🚌 버스로 이동 ${l.km}km` : mode === 'walk' ? `🚶 걸어서 약 ${hm(l.walk)} (${l.km}km)${l.walk > 30 ? ' · 많이 멀어요' : ''}` : `🚗 차로 약 ${l.minutes}분 (${l.km}km)`)
   const plain = ({ tip, ...stop }) => stop
   const show = (s) => {
     const sp = spots.find((x) => x.title === s.title)
@@ -291,6 +294,10 @@ function CourseCard({ course }) {
 
   return (
     <div className="course-card">
+      <div className="course-head">
+        {chip && <span className="route-mood">{chip}</span>}
+        <div className="route-title course-title">{title}</div>
+      </div>
       <ol>
         {stops.map((s, i) => (
           <li key={`${s.title}-${i}`}>

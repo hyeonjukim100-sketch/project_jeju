@@ -567,3 +567,7 @@ p { text-wrap: pretty; }
 .bus-opt-stops { margin-top: .1rem; line-height: 1.6; }
 .bus-opt small, .bus-detail small { color: var(--sub); font-size: .8rem; }
 .bus-detail i { color: var(--strong); font-size: 1rem; }
+
+/* ===== 리디자인: 챗 코스 카드 제목 ===== */
+.course-head { display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; }
+.course-title { font-size: 1.05rem; margin: 0; }
