@@ -215,7 +215,7 @@ export default function My() {
   if (!authReady) return <div className="page-stub text-secondary">잠시만요…</div>
   if (!user) {
     return (
-      <div className="page-stub">
+      <div className="page-stub auth-stub">
         <h1 className="h3 mb-3">나의 여행 기록</h1>
         <AuthForm />
       </div>

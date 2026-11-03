@@ -25,7 +25,7 @@ export default function RootLayout() {
         </Link>
         <nav className="nav-links">
           {NAV_ITEMS.map((n) => (
-            <Link key={n.to} to={n.to} className={`nav-link-item ${here === n.to ? 'active' : ''}`}>
+            <Link key={n.to} to={n.to} className={`nav-link-item ${here === n.to ? 'active' : ''}`} aria-label={n.label} aria-current={here === n.to ? 'page' : undefined}>
               <Emoji name={n.emoji} size="1.3em" /> <span>{n.label}</span>
             </Link>
           ))}

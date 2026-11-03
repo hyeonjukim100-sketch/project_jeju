@@ -673,3 +673,28 @@ p { text-wrap: pretty; }
   .chat-panel { right: .8rem; left: .8rem; width: auto; bottom: 5.4rem; max-height: calc(100dvh - 8rem); }
 }
 .nav-chat .mongsumi-face { display: block; margin: auto; }
+
+/* 마지막 점검: 지도 글자 12px, 접기 줄과 탭의 누르는 면적 키우기 */
+.map-label { font-size: .75rem; }
+@media (max-width: 640px) {
+  .sheet-toggle { min-height: 44px; }
+  .panel-tabs button { min-height: 40px; }
+}
+
+/* 로그인 화면: 제목과 카드를 가운데로 */
+.auth-stub { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.auth-stub .auth-card { margin: 0 auto; text-align: left; }
+.auth-stub .auth-card h2 { text-align: center; }
+
+/* 장소 분류 칩: 넓은 화면은 줄바꿈, 모바일은 옆으로 밀기 + 끝 표시 */
+.chip-slider { position: relative; }
+.chip-slider-arrow { display: none; }
+@media (max-width: 640px) {
+  .chip-slider-track { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; padding: .1rem 0 .25rem; }
+  .chip-slider-track::-webkit-scrollbar { display: none; }
+  .chip-slider-track .chip { scroll-snap-align: start; }
+  .chip-slider-arrow { position: absolute; top: 0; bottom: .25rem; width: 2.6rem; display: flex; align-items: center; border: 0; padding: 0; color: var(--ink); font-size: .95rem; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .chip-slider-arrow.right { right: 0; justify-content: flex-end; padding-right: .3rem; background: linear-gradient(to right, transparent, var(--surface) 70%); }
+  .chip-slider-arrow.left { left: 0; padding-left: .3rem; background: linear-gradient(to left, transparent, var(--surface) 70%); }
+  .chip-slider.has-right .chip-slider-arrow.right, .chip-slider.has-left .chip-slider-arrow.left { opacity: 1; pointer-events: auto; }
+}

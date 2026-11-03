@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import ChipSlider from './ChipSlider'
 import JejuMap3D from './JejuMap3D'
 import SeasonTab from './SeasonTab'
 import SuggestStrip from './SuggestStrip'
@@ -597,13 +598,13 @@ export default function Explore() {
                   </button>
                 )}
               </div>
-              <div className="kind-chips">
+              <ChipSlider>
                 {kinds.map((k) => (
                   <button key={k} type="button" className={`chip ${k === kind ? 'on' : ''}`} onClick={() => setKind(k)}>
                     {KIND_EMOJI[k] && <Emoji name={KIND_EMOJI[k]} size="1.15em" />} {k}
                   </button>
                 ))}
-              </div>
+              </ChipSlider>
               {kind === '올레코스' ? <OlleCourses /> : <PlaceList spots={shown} />}
             </>
           )}
