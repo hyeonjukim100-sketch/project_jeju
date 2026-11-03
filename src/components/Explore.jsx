@@ -596,6 +596,14 @@ export default function Explore() {
   const seasonOnly = mobile && panelTab === 'season' && !!seasonPicks[seasonName]?.length
   const mapSpots = seasonOnly ? [] : routeOnly ? routeSpots : shown
 
+  // 하루 동선·계절 추천을 보면 그 곳들이 있는 지역으로 지도를 옮긴다 (곳이 바뀌거나 탭을 열 때마다)
+  const fitTo = useAppStore((s) => s.fitTo)
+  const fitPts = (panelTab === 'plan' ? viewed : panelTab === 'season' ? seasonPicks[seasonName] || [] : []).filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+  const fitKey = fitPts.map((p) => `${p.lat},${p.lng}`).join('|')
+  useEffect(() => {
+    if (fitPts.length) fitTo(fitPts.map((p) => ({ lat: p.lat, lng: p.lng })))
+  }, [fitKey, panelTab])
+
   return (
     <section id="explore" className="explore">
       <div className="explore-info">

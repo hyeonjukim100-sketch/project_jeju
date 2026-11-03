@@ -345,6 +345,21 @@ function CameraRig() {
     } else goal.current = { to, pos, detail: { lat: focus.lat, lng: focus.lng } } // 다 날아간 뒤 세부 지도로
   }, [focus])
 
+  // 여러 곳(동선·계절 추천)이 모두 보이게 그 중심으로 옮긴다. 세부 지도로 바뀔 만큼 가까워지지는 않게 멈춘다.
+  const fit = useAppStore((s) => s.fit)
+  useEffect(() => {
+    if (!fit?.points.length || useAppStore.getState().detail) return
+    const c = controls.current
+    const p = fit.points.map((q) => toScene(q.lng, q.lat))
+    const xs = p.map((v) => v[0]), zs = p.map((v) => v[2])
+    const to = new THREE.Vector3((Math.min(...xs) + Math.max(...xs)) / 2, p[0][1] - 0.04, (Math.min(...zs) + Math.max(...zs)) / 2)
+    const span = Math.max(Math.max(...zs) - Math.min(...zs), (Math.max(...xs) - Math.min(...xs)) * (size.height / size.width))
+    const dir = camera.position.clone().sub(c.target).normalize()
+    if (dir.y < 0.55) { dir.y = 0.55; dir.normalize() }
+    const dist = THREE.MathUtils.clamp(span * 2 + 1, DETAIL_D + 0.5, 14)
+    goal.current = { to, pos: to.clone().addScaledVector(dir, dist) }
+  }, [fit])
+
   useEffect(() => {
     if (!detailReq) return
     enterDetail()

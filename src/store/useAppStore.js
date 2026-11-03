@@ -35,6 +35,9 @@ export const useAppStore = create((set, get) => ({
       focus: selectedSpot && selectedSpot.lat != null ? { lat: selectedSpot.lat, lng: selectedSpot.lng, n: (st.focus?.n || 0) + 1 } : st.focus,
     })),
   focus: null,
+  // 동선·계절 추천처럼 여러 곳을 한꺼번에 보여 줄 때: 그 곳들이 모두 들어오게 지도를 옮긴다 (fit 이 바뀔 때마다 한 번)
+  fit: null,
+  fitTo: (points) => set((st) => ({ fit: { points, n: (st.fit?.n || 0) + 1 } })),
   // 세부 지도(2D): 3D 를 충분히 확대하면 켜진다. detail = { lat, lng, zoom }
   detail: null,
   detailReq: 0,

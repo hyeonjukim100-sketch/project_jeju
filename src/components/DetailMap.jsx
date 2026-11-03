@@ -122,6 +122,15 @@ export default function DetailMap({ spots }) {
     m.flyTo(shifted(m, L.latLng(focus.lat, focus.lng), z), z, { duration: 0.9 })
   }, [focus])
 
+  // 동선·계절 추천: 그 곳들이 모두 보이게 옮긴다
+  const fit = useAppStore((s) => s.fit)
+  useEffect(() => {
+    const m = map.current
+    if (!m || !fit?.points.length) return
+    const side = window.innerWidth >= 768 ? 366 : 40 // 넓은 화면은 왼쪽 패널이 가리는 만큼 비운다
+    m.flyToBounds(L.latLngBounds(fit.points.map((p) => [p.lat, p.lng])), { paddingTopLeft: [side, 50], paddingBottomRight: [40, 40], maxZoom: 15, duration: 0.9 })
+  }, [fit])
+
   return (
     <div className="detail-map">
       <div ref={box} className="detail-map-box" />
