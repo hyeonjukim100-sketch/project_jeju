@@ -742,7 +742,7 @@ p { text-wrap: pretty; }
   .map-stage .glass-panel.dragging { transition: none; }
   .map-stage .glass-panel.sheet-peek { height: 11.5rem; overflow: hidden; }
   .map-stage .glass-panel.sheet-mid { height: 55%; }
-  .map-stage .glass-panel.sheet-full { height: calc(100% - 9rem); }
+  .map-stage .glass-panel.sheet-full { height: 100%; }
   .sheet-handle {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; width: 100%; min-height: 44px; margin: 0 0 .3rem;
     border: 0; background: transparent; color: var(--sub); font-size: .78rem; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none;

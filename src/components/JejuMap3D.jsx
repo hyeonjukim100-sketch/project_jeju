@@ -378,7 +378,7 @@ function CameraRig() {
 function FitZoom() {
   const { camera, size } = useThree()
   const goal = useRef(1)
-  goal.current = window.innerWidth < 640 ? Math.min(1.3, Math.max(1, 1 + (size.width / size.height - 0.8) * 0.15)) : 1
+  goal.current = window.innerWidth < 640 && size.height > 0 ? Math.min(1.3, Math.max(1, 1 + (size.width / size.height - 0.8) * 0.15)) : 1
   useFrame(() => {
     if (Math.abs(camera.zoom - goal.current) < 0.002) return
     camera.zoom += (goal.current - camera.zoom) * 0.15

@@ -17,6 +17,7 @@ import { ratingsFor } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP } from '../lib/moods'
 import { activityName, routeTitle } from '../lib/routeTitle'
+import { useIsMobile } from '../lib/useIsMobile'
 import { useAppStore } from '../store/useAppStore'
 
 const START_MIN = 10 * 60 // 하루는 10:00 에 시작한다고 보고 예상 시각을 계산한다
@@ -31,10 +32,10 @@ const TRANSPORTS = [
   { key: 'bus', label: '버스', icon: 'bi-bus-front' },
 ]
 const LONG_LEG = 35 // 느린 일정: 한 구간 이동은 35분 안쪽
-// 모바일 아래 시트 높이: 닫힘은 손잡이+탭 높이(rem), 중간은 지도 영역의 비율, 가득은 위에 지도를 조금 남긴다(rem)
+// 모바일 아래 시트 높이: 닫힘은 손잡이+탭 높이(rem), 중간은 지도 영역의 비율, 가득은 위에 남기는 지도 높이(rem)
 const PEEK_REM = 11.5
 const MID_RATIO = 0.55
-const FULL_GAP_REM = 9
+const FULL_GAP_REM = 0 // 가득 올리면 지도를 완전히 덮는다
 const clock = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
 // 근처 카페·식당 (카카오 로컬) — 별점·분위기 정보는 없어서 이름·분류·거리만 보여 준다
@@ -519,7 +520,8 @@ function PlaceList({ spots }) {
 
 // 스크롤하면 나오는 화면: 날씨 → 3D 지도 + 하루 동선
 export default function Explore() {
-  const { spots, weather, selectedSpot: spot, selectSpot, plan, recPlan, planView, onlyRoute, panelTab, setPanelTab, addStop, loadSpots, loadWeather } = useAppStore()
+  const { spots, weather, selectedSpot: spot, selectSpot, plan, recPlan, planView, onlyRoute, panelTab, setPanelTab, addStop, loadSpots, loadWeather, seasonName, seasonPicks } = useAppStore()
+  const mobile = useIsMobile()
   const [kind, setKind] = useState('전체')
   const [query, setQuery] = useState('')
   // 모바일 아래 시트: 처음엔 탭만 보이고(peek), 탭이나 핀을 누르면 열리며(mid), 끌어서 더 키울 수 있다(full)
@@ -589,8 +591,10 @@ export default function Explore() {
     () => viewed.map((st) => spots.find((x) => x.title === st.title) || { ...st, id: `stop:${st.title}` }),
     [viewed, spots],
   )
-  const routeOnly = panelTab === 'plan' && onlyRoute && planView === 'mine' && routeSpots.length > 0
-  const mapSpots = routeOnly ? routeSpots : shown
+  // 모바일은 동선 탭에서 담은 곳만, 계절 추천 탭에서 추천된 곳만 핀으로 남긴다 (웹은 "동선 확인하기" 버튼으로 고른다)
+  const routeOnly = panelTab === 'plan' && (mobile || (onlyRoute && planView === 'mine')) && routeSpots.length > 0
+  const seasonOnly = mobile && panelTab === 'season' && !!seasonPicks[seasonName]?.length
+  const mapSpots = seasonOnly ? [] : routeOnly ? routeSpots : shown
 
   return (
     <section id="explore" className="explore">
