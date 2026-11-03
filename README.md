@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/og.png" alt="느린 제주 마음지도" width="720" />
+<img src="public/images/og.png" alt="느린 제주 마음지도" width="720" />
 
 # 🌊 느린 제주 마음지도
 
@@ -158,7 +158,7 @@ src/
   pages/      Home, My(나의 여행 기록), TripWrite(여행 기록 쓰기)
   lib/        위험 문구(crisis), 기분(moods), 계절 팔레트(season), 웰니스 목록 ...
 supabase/     데이터베이스 SQL (단계별)
-public/       og.png, 이모지, 몽숨이 3D 모델(models/)
+public/       images/og.png, 이모지, 몽숨이 3D 모델(models/)
 blender/      몽숨이 모델을 만든 Blender 스크립트
 docs/         설계·계획 문서, 인수인계 메모(NEXT.md)
 ```

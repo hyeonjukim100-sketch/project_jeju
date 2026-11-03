@@ -21,7 +21,7 @@
 - 문구 점검: `src/lib/wording.test.js` 가 화면 소스에 치유·치료·힐링·우울증 등 효과 단정 표현이 들어오면 실패 (공식 장소 이름 "서귀포 치유의 숲"만 예외)
 - 호출 횟수 제한: `/api/chat` 1분 15번 + 1시간 100번, `/api/plan` 1분 10번, `/api/legs`·`/api/places` 1분 30번 (`server/rateLimit.js`, 인스턴스마다 따로 세는 간단한 방어. 같은 와이파이를 쓰는 사람이 많으면 한 IP로 보여 일찍 막힐 수 있음)
 - Supabase 권한(RLS) 점검: trips·favorites·mood_logs는 로그인 안 하면 읽기 빈 값, 쓰기 거부. 사진 보관함도 비공개. place_reviews만 공개 읽기(의도). 다른 계정으로 로그인해서 서로의 기록이 안 보이는지는 계정 2개가 필요해 아직 안 해 봄
-- OG: `public/og.png`(1200x630) + `index.html` 메타 태그. 링크 미리보기는 완전한 주소가 필요하므로 Vercel 환경변수 `VITE_SITE_URL`(예: https://배포주소) 설정 후 재배포 (없으면 Vercel이 주는 운영 주소를 씀, `vite.config.js`)
+- OG: `public/images/og.png`(1200x630) + `index.html` 메타 태그. 링크 미리보기는 완전한 주소가 필요하므로 Vercel 환경변수 `VITE_SITE_URL`(예: https://배포주소) 설정 후 재배포 (없으면 Vercel이 주는 운영 주소를 씀, `vite.config.js`)
 
 ## 리디자인 (브랜치 `redesign-spot-route`, 2026-11-03)
 설계 `docs/superpowers/specs/2026-11-03-spot-route-redesign-design.md`, 계획 `docs/superpowers/plans/2026-11-03-spot-route-redesign.md`.
