@@ -10,7 +10,8 @@ import BusLegDetail, { BUS_URL } from './BusLegDetail'
 import ReviewBox from './ReviewBox'
 import SpotDetail from './SpotDetail'
 import TripRecord from './TripRecord'
-import { fetchPlaces } from '../api/client'
+import { fetchPhotos, fetchPlaces } from '../api/client'
+import { isWellness } from '../lib/wellness'
 import { ratingsFor } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP } from '../lib/moods'
@@ -425,6 +426,40 @@ function PlanTab({ spots }) {
 }
 
 
+// 장소 격자 카드: 사진은 화면에 보일 때만 불러온다 (사진이 없으면 종류 이모지)
+function PlaceCard({ spot, onOpen }) {
+  const ref = useRef(null)
+  const [seen, setSeen] = useState(false)
+  const [url, setUrl] = useState(null)
+  useEffect(() => {
+    if (!ref.current || typeof IntersectionObserver === 'undefined') return setSeen(true)
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setSeen(true), io.disconnect()), { rootMargin: '80px' })
+    io.observe(ref.current)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => {
+    if (!seen) return
+    let live = true
+    fetchPhotos(spot)
+      .then((r) => live && setUrl(r.photos?.[0]?.url || null))
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [seen, spot.id])
+  const emoji = KIND_EMOJI[KIND_GROUP[spot.kind]] || KIND_EMOJI[spot.kind] || 'pin'
+  return (
+    <button type="button" className="place-card" onClick={onOpen}>
+      <span className="place-card-pic" ref={ref}>
+        {url ? <img className="place-card-photo" src={url} alt="" loading="lazy" onError={() => setUrl(null)} /> : <Emoji name={emoji} size="2rem" />}
+        {isWellness(spot.title) && <span className="place-card-tag">웰니스</span>}
+      </span>
+      <span className="place-card-name">{spot.title}</span>
+      <span className="place-card-sub">{spot.address}</span>
+    </button>
+  )
+}
+
 // 고른 종류의 장소 목록 (핀과 같은 이모지). 천여 곳일 수 있어 먼저 40곳만 보여 준다.
 function PlaceList({ spots }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
@@ -435,16 +470,10 @@ function PlaceList({ spots }) {
   return (
     <>
       <div className="small text-secondary mt-2">{spots.length}곳</div>
-      <ul className="place-list">
+      <ul className="place-grid">
         {spots.slice(0, more).map((s) => (
           <li key={s.id}>
-            <button type="button" onClick={() => selectSpot(s)}>
-              <Emoji name={KIND_EMOJI[KIND_GROUP[s.kind]] || KIND_EMOJI[s.kind] || 'pin'} size="1.3em" />
-              <span className="text-start">
-                <span className="place-name">{s.title}</span>
-                <span className="small text-secondary d-block">{s.address}</span>
-              </span>
-            </button>
+            <PlaceCard spot={s} onOpen={() => selectSpot(s)} />
           </li>
         ))}
       </ul>

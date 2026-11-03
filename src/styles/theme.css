@@ -598,3 +598,34 @@ p { text-wrap: pretty; }
 /* ===== 제주 웰니스관광지 라벨 (사진 오른쪽 아래) ===== */
 .hero-label { position: absolute; right: .8rem; bottom: 2rem; z-index: 2; display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .7rem; border-radius: 999px; background: color-mix(in srgb, var(--surface) 94%, transparent); color: var(--ink); font-size: .75rem; font-weight: 700; line-height: 1.4; box-shadow: var(--shadow-soft); }
 .spot-hero.wellness .spot-hero-thumbs { right: 9.8rem; }
+
+/* ───────── 시안 반영: 알약형 탭, 사진 격자, 모바일 하단 알약 탭 바 ───────── */
+.panel-tabs { padding: .25rem; border-radius: 999px; background: var(--soft); gap: .2rem; }
+.panel-tabs button { border: 0; background: transparent; min-height: calc(var(--tap) - .5rem); }
+.panel-tabs button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-soft); }
+
+.place-grid { list-style: none; padding: 0; margin: .5rem 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem .6rem; }
+.place-card { width: 100%; padding: 0; border: 0; background: transparent; color: var(--ink); text-align: left; display: block; }
+.place-card-pic { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; background: var(--soft); }
+.place-card-pic img.place-card-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.place-card:active .place-card-pic { transform: scale(.985); }
+.place-card-pic { transition: transform .15s var(--ease); }
+.place-card-name { display: block; margin-top: .3rem; font-weight: 700; font-size: .88rem; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place-card-sub { display: block; font-size: .75rem; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place-card-tag { position: absolute; left: .4rem; top: .4rem; padding: .1rem .5rem; border-radius: 999px; background: var(--surface); font-size: .72rem; font-weight: 700; }
+
+@media (max-width: 640px) {
+  .app-nav { position: static; }
+  .nav-links {
+    position: fixed; left: 50%; bottom: .8rem; transform: translateX(-50%); z-index: 1500;
+    display: flex; gap: .2rem; padding: .3rem; border-radius: 999px; background: var(--ink); box-shadow: 0 8px 24px rgba(40, 30, 20, .28);
+  }
+  .nav-link-item { min-height: 44px; min-width: 44px; padding: 0; border-radius: 50%; color: var(--surface); }
+  .nav-link-item:hover { background: color-mix(in srgb, var(--surface) 18%, transparent); color: var(--surface); }
+  .nav-link-item.active { background: var(--accent); color: var(--strong-ink); }
+  .nav-link-item .emoji { width: 1.4em !important; height: 1.4em !important; }
+  .chat-fab { bottom: 5.4rem; }
+  .app-notice { padding-bottom: 4.6rem; }
+  .glass-panel { padding-bottom: 5.4rem; }
+  .toast-stack { bottom: 5.4rem; }
+}
