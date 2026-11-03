@@ -1,4 +1,7 @@
 import { getBusLeg } from '../server/busLeg.js'
+import { createLimiter } from '../server/rateLimit.js'
+
+const tooMany = createLimiter(30) // 같은 IP 에서 1분에 30번까지 (도청 사이트에 요청이 몰리지 않게)
 
 // GET /api/bus-leg?fromLat=&fromLng=&toLat=&toLng=  → { options: [{ number, to, board, alight, stops, nextMin }] }
 // 제주버스정보시스템 누리집이 쓰는 비공식 주소를 쓰므로 실패하면 빈 결과로 답하고, 화면이 안내 문구로 대신한다.
@@ -6,6 +9,8 @@ const inJeju = (lat, lng) => lat > 33 && lat < 34 && lng > 126 && lng < 127.2
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET 만 받아요' })
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'local'
+  if (tooMany(ip)) return res.status(429).json({ error: '잠시 후에 다시 눌러 주세요' })
   const q = new URL(req.url, 'http://x').searchParams
   const [fromLat, fromLng, toLat, toLng] = ['fromLat', 'fromLng', 'toLat', 'toLng'].map((k) => (q.get(k) === null ? NaN : Number(q.get(k))))
   if (![fromLat, fromLng, toLat, toLng].every(Number.isFinite) || !inJeju(fromLat, fromLng) || !inJeju(toLat, toLng)) {

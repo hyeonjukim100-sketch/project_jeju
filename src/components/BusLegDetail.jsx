@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { fetchBusLeg } from '../api/client'
+import { busMeta, moreLabel } from '../lib/busText'
 
 export const BUS_URL = 'https://bus.jeju.go.kr' // 제주버스정보시스템 (배차 간격·도착 시각)
 const TIMEOUT = 15000 // 서버가 8초 안에 답하지만, 그래도 안 오면 안내 문구로 넘어간다
@@ -12,6 +13,7 @@ export default function BusLegDetail({ from, to }) {
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState('idle') // idle | loading | done
   const [options, setOptions] = useState([])
+  const [expanded, setExpanded] = useState(false) // 처음엔 버스 1개만, "더 보기"로 나머지
 
   const load = () => {
     if (!isPoint(from) || !isPoint(to)) {
@@ -49,19 +51,24 @@ export default function BusLegDetail({ from, to }) {
             </div>
           )}
           {status === 'done' && options.length > 0 && (
-            <ul className="bus-opts">
-              {options.map((o) => (
-                <li key={o.number} className="bus-opt">
-                  <div className="bus-opt-head">
-                    <b>{o.number}번</b> 버스 <small>· {o.stops}개 정류장</small>
-                    {o.nextMin != null && <small> · 다음 버스 약 {o.nextMin}분 뒤</small>}
-                  </div>
-                  <div className="bus-opt-stops">
-                    {o.board.name} <small>(걸어서 {o.board.meters}m)</small> <i className="bi bi-arrow-right" /> {o.alight.name} <small>(걸어서 {o.alight.meters}m)</small>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="bus-opts">
+                {(expanded ? options : options.slice(0, 1)).map((o) => (
+                  <li key={o.number} className="bus-opt">
+                    <div className="bus-opt-num">{o.number}번</div>
+                    <div className="bus-opt-meta">{busMeta(o)}</div>
+                    <div className="bus-opt-stops">
+                      {o.board.name} <small>(걸어서 {o.board.meters}m)</small> <i className="bi bi-arrow-right" /> {o.alight.name} <small>(걸어서 {o.alight.meters}m)</small>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {options.length > 1 && (
+                <button type="button" className="bus-more" aria-expanded={expanded} onClick={() => setExpanded((e) => !e)}>
+                  {moreLabel(options.length, expanded)} <i className={`bi bi-chevron-${expanded ? 'up' : 'down'}`} />
+                </button>
+              )}
+            </>
           )}
           {status === 'done' && options.length === 0 && (
             <div className="bus-detail-note">

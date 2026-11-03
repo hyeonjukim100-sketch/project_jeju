@@ -563,8 +563,6 @@ p { text-wrap: pretty; }
 .bus-detail-note { line-height: 1.6; }
 .bus-detail-note a { color: var(--ink); font-weight: 700; }
 .bus-opts { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
-.bus-opt-head { font-size: .9rem; line-height: 1.5; }
-.bus-opt-head b { font-size: 1rem; }
 .bus-opt-stops { margin-top: .1rem; line-height: 1.6; }
 .bus-opt small, .bus-detail small { color: var(--sub); font-size: .8rem; }
 .bus-detail i { color: var(--strong); font-size: 1rem; }
@@ -573,3 +571,14 @@ p { text-wrap: pretty; }
 .course-head { display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; }
 .course-title { font-size: 1.05rem; margin: 0; }
 .bus-retry { min-height: 32px; padding: 0 .1rem; border: 0; background: transparent; color: var(--ink); font-weight: 700; text-decoration: underline; }
+
+/* ===== 버스 세부정보: 번호 / 정류장 수·다음 버스 / 승하차 3줄 ===== */
+.bus-opt-num { font-size: 1.05rem; font-weight: 800; line-height: 1.4; }
+.bus-opt-meta { font-size: .85rem; color: var(--sub); line-height: 1.5; }
+.bus-more { margin-top: .3rem; min-height: 36px; padding: 0; border: 0; background: transparent; color: var(--ink); font-size: .85rem; font-weight: 700; display: inline-flex; align-items: center; gap: .25rem; }
+
+/* ===== 모바일: 아래 안내(푸터) 글자를 작게 ===== */
+@media (max-width: 640px) {
+  .app-notice { padding: .25rem .8rem; font-size: .68rem; line-height: 1.4; }
+  .app-notice .credit { font-size: .6rem; }
+}
