@@ -639,3 +639,24 @@ p { text-wrap: pretty; }
 
 /* 장소 상세: "동선에 담기"를 크고 눈에 띄게 */
 .spot-sheet .btn-soft.w-100 { min-height: 52px; border: 0; border-radius: 999px; background: var(--strong); color: var(--strong-ink); font-weight: 800; font-size: 1rem; margin-top: .9rem !important; }
+
+/* 모바일: 시간·날씨는 둥근 카드, 오늘의 제안은 옆으로 밀지 않고 세로로 한눈에 */
+@media (max-width: 640px) {
+  .weather-strip { margin: .7rem .8rem 0; padding: .8rem .9rem; border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow-soft); display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .7rem .6rem; }
+  .ws-moment > div { text-align: left; }
+  .ws-title { font-size: 1rem; line-height: 1.25; }
+  .ws-sub { font-size: .9rem; }
+  .ws-sky { font-size: 1.15rem; font-weight: 800; justify-content: flex-end; text-align: right; }
+  .ws-sky small { display: block; font-size: .75rem; font-weight: 600; }
+  .ws-meta { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; overflow: visible; margin: 0; font-size: .82rem; }
+  .ws-meta span { justify-content: center; padding: .4rem .5rem; border-radius: 999px; background: var(--soft); font-weight: 600; }
+
+  .suggest { margin: .7rem .8rem 0; padding: .9rem; border: 1px solid var(--line); border-radius: 22px; background: var(--soft); }
+  .suggest-head { flex-direction: column; align-items: stretch; gap: .5rem; margin-bottom: .7rem; }
+  .suggest-head strong { display: block; font-size: 1.1rem; font-weight: 800; letter-spacing: -.01em; }
+  .suggest-why { font-size: .85rem; line-height: 1.45; margin-top: .15rem; }
+  .suggest-cards { flex-direction: column; overflow: visible; gap: .5rem; }
+  .suggest-card { flex: none; width: 100%; min-width: 0; min-height: 60px; padding: .6rem .9rem; border-radius: 18px; }
+  .suggest-title { font-size: 1rem; }
+  .suggest-note { font-size: .82rem; margin-top: .1rem; }
+}
