@@ -62,9 +62,14 @@ const shelfM = blur(landMask, 4)
 const gx = (c) => (dem.lng0 + c * dem.dLng - 126.55) * K * XS
 const gz = (r) => -(dem.lat1 - r * dem.dLat - 33.38) * K
 
-// 밤에는 계절색을 어둡게 섞는다
-const NIGHT = '#1d2a3c'
-const tone = (hex, night) => (night ? `#${new THREE.Color(hex).lerp(new THREE.Color(NIGHT), 0.62).getHexString()}` : hex)
+// 해가 진 뒤: 계절과 상관없이 남색 하늘에 청록 섬 (해질녘 글로우)
+const DUSK = { sky: '#262B58', sea: '#2A4377', land: '#7FB8A6', mount: '#A4D2B8', shallow: '#4F86B8', wash: ['#9CCBB4', '#7DA6C8', '#B4DCC0'] }
+// 낮: 계절 색 위에 번지는 수채화 얼룩 색
+const WASH_DAY = ['#E4EDA8', '#B8E6B0', '#A8DCC4']
+// 낮 땅은 계절 색을 초록쪽으로 끌어당긴다
+const greener = (hex, to, t) => `#${new THREE.Color(hex).lerp(new THREE.Color(to), t).getHexString()}`
+// 부드럽게 이어지는 값 잡음 (0~1). 격자 좌표에 사인을 겹쳐 수채 물감이 번진 듯한 얼룩을 만든다
+const blotch = (x, z, s) => 0.5 + 0.25 * Math.sin(x * s + 1.3 * Math.sin(z * s * 0.7)) + 0.25 * Math.sin(z * s * 1.1 - 1.7 * Math.sin(x * s * 0.6 + 2))
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 
 // 점토 느낌: 아주 약한 얼룩(범프) 무늬
@@ -75,7 +80,7 @@ function useClayBump() {
     const g = c.getContext('2d')
     const d = g.createImageData(256, 256)
     for (let i = 0; i < d.data.length; i += 4) {
-      const v = 118 + Math.random() * 20
+      const v = 122 + Math.random() * 10
       d.data[i] = d.data[i + 1] = d.data[i + 2] = v
       d.data[i + 3] = 255
     }
@@ -88,8 +93,9 @@ function useClayBump() {
 }
 
 // 고도 격자 → 점토 지형 (해안은 낮은 땅, 한라산은 높은 흙색)
-function useTerrain(land, mount) {
+function useTerrain(land, mount, wash) {
   return useMemo(() => {
+    const washes = wash.map((h) => new THREE.Color(h))
     const { cols, rows } = dem
     const pos = new Float32Array(cols * rows * 3)
     const col = new Float32Array(cols * rows * 3)
@@ -102,7 +108,11 @@ function useTerrain(land, mount) {
       const top = BASE + Math.max(e, 0) * EXAG
       pos.set([gx(q), SEA_Y + (top - SEA_Y) * sstep(0.2, 0.62, coastM[i]), gz(r)], i * 3)
       uv.set([q / (cols - 1), r / (rows - 1)], i * 2)
-      c.copy(cLand).lerp(cMount, sstep(80, 700, e)).lerp(cRock, sstep(1250, 1800, e) * 0.8).lerp(cSand, 1 - sstep(0, 14, e))
+      const x = gx(q), z = gz(r)
+      c.copy(cLand)
+      washes.forEach((w, k) => c.lerp(w, sstep(0.5, 0.8, blotch(x + k * 3.1, z - k * 2.3, 1.1 + k * 0.55)) * 0.7))
+      c.lerp(cMount, sstep(80, 700, e)).lerp(cRock, sstep(1250, 1800, e) * 0.8).lerp(cSand, 1 - sstep(0, 14, e))
+      c.multiplyScalar(0.92 + 0.14 * blotch(x * 1.7, z * 1.7, 5.5)) // 물감이 고인 듯 진하고 옅은 얼룩
       col.set([c.r, c.g, c.b], i * 3)
     }
     const idx = []
@@ -118,7 +128,7 @@ function useTerrain(land, mount) {
     g.setIndex(idx)
     g.computeVertexNormals()
     return g
-  }, [land, mount])
+  }, [land, mount, wash])
 }
 
 // 섬 둘레 얕은 바다 띠: 흐린 마스크가 0.3 인 곳이 바닷물 높이와 만나서 부드러운 띠 가장자리가 된다
@@ -138,16 +148,16 @@ const shelfGeo = (() => {
   return g
 })()
 
-function Island({ land, mount, shallow }) {
+function Island({ land, mount, shallow, wash }) {
   const bump = useClayBump()
-  const terrain = useTerrain(land, mount)
+  const terrain = useTerrain(land, mount, wash)
   return (
     <group>
       <mesh geometry={shelfGeo}>
         <meshStandardMaterial color={shallow} roughness={1} transparent opacity={0.8} />
       </mesh>
       <mesh geometry={terrain}>
-        <meshStandardMaterial vertexColors roughness={0.95} bumpMap={bump} bumpScale={0.5} />
+        <meshStandardMaterial vertexColors roughness={0.95} bumpMap={bump} bumpScale={0.25} />
       </mesh>
     </group>
   )
@@ -165,20 +175,30 @@ function Sea({ color }) {
 // 핀: 하얀 동그라미 안에 장소 종류 이모지. 종류마다 한 번에 그린다 (Points, 천여 곳도 가볍다)
 const pinKey = (s) => (KIND_EMOJI[KIND_GROUP[s.kind]] ? KIND_GROUP[s.kind] : KIND_EMOJI[s.kind] ? s.kind : '기타')
 
-function pinTexture(emoji, ring, onReady) {
+function pinTexture(emoji, ring, onReady, night) {
   const img = new Image()
   img.onload = () => {
     const c = document.createElement('canvas')
     c.width = c.height = 192
     const g = c.getContext('2d')
+    if (night) {
+      // 밤: 노란 불빛이 번지는 핀
+      const glow = g.createRadialGradient(96, 96, 56, 96, 96, 96)
+      glow.addColorStop(0, 'rgba(243,199,107,0.95)')
+      glow.addColorStop(1, 'rgba(243,199,107,0)')
+      g.fillStyle = glow
+      g.fillRect(0, 0, 192, 192)
+    }
+    const r = night ? 66 : 86
     g.beginPath()
-    g.arc(96, 96, 86, 0, Math.PI * 2)
-    g.fillStyle = '#ffffff'
+    g.arc(96, 96, r, 0, Math.PI * 2)
+    g.fillStyle = night ? '#fff8e0' : '#ffffff'
     g.fill()
     g.lineWidth = 12
-    g.strokeStyle = ring
+    g.strokeStyle = night ? '#F3C76B' : ring
     g.stroke()
-    g.drawImage(img, 38, 38, 116, 116)
+    const s = night ? 90 : 116
+    g.drawImage(img, 96 - s / 2, 96 - s / 2, s, s)
     const t = new THREE.CanvasTexture(c)
     t.colorSpace = THREE.SRGBColorSpace
     t.anisotropy = 4
@@ -192,13 +212,14 @@ const RING = { 자연: '#4FA765', 오름: '#A0694A', 트레일: '#D08A3E', 문�
 
 function PinLayer({ name, spots, size = 1, ring = RING[name] || '#F2A65A', onPick, lift = 0, top = false }) {
   const [tex, setTex] = useState(null)
+  const night = useAppStore((s) => !!s.weather && !s.weather.isDay) && !top // 고른 핀은 밤에도 눈에 띄는 색 그대로
   useEffect(() => {
     let dead = false
-    pinTexture(KIND_EMOJI[name] || 'pin', ring, (t) => !dead && setTex(t))
+    pinTexture(KIND_EMOJI[name] || 'pin', ring, (t) => !dead && setTex(t), night)
     return () => {
       dead = true
     }
-  }, [name, ring])
+  }, [name, ring, night])
   // 핀 크기는 화면 픽셀 기준: 멀리선 작게(겹침 줄이기), 가까이선 크게(선명하게)
   const mat = useRef()
   useFrame(({ camera }) => {
@@ -402,13 +423,30 @@ function FitZoom() {
   return null
 }
 
+// 밤하늘: 지도 위쪽에 연하게 깜빡이는 별. 카메라가 아래를 보고 있어 3D 안에 하늘이 없으므로 화면 위에 얹는다
+const STARS = (() => {
+  let s = 7
+  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647)
+  return Array.from({ length: 48 }, () => ({ left: rnd() * 100, top: Math.pow(rnd(), 1.7) * 46, size: 1 + rnd() * 1.6, o: 0.3 + rnd() * 0.45, d: rnd() * 4 }))
+})()
+function Stars() {
+  return (
+    <div className="night-stars" aria-hidden="true">
+      {STARS.map((t, i) => (
+        <i key={i} style={{ left: `${t.left}%`, top: `${t.top}%`, width: t.size, height: t.size, opacity: t.o, animationDelay: `${t.d}s` }} />
+      ))}
+    </div>
+  )
+}
+
 export default function JejuMap3D({ spots, weather }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
   const detail = useAppStore((s) => s.detail)
   const requestDetail = useAppStore((s) => s.requestDetail)
   const night = !!weather && !weather.isDay
   const sc = SEASONS[season].scene
-  const sky = useMemo(() => tone(SEASONS[season].vars.bg, night), [night])
+  const pal = useMemo(() => (night ? DUSK : { sky: SEASONS[season].vars.bg, sea: sc.sea, land: greener(sc.land, '#8FD07E', 0.9), mount: greener(sc.mount, '#6DAE6E', 0.85), shallow: new THREE.Color(sc.sea).lerp(new THREE.Color('#ffffff'), 0.35).getStyle(), wash: WASH_DAY }), [night])
+  const sky = pal.sky
   const narrow = window.innerWidth < 640 // 세로로 긴 화면에서는 섬 전체가 보이게 뒤로 물러난다
 
   return (
@@ -416,11 +454,11 @@ export default function JejuMap3D({ spots, weather }) {
     <Canvas camera={{ position: narrow ? [0, 9, 12] : [0, 6, 8], fov: 45 }} raycaster={{ params: { Points: { threshold: 0.07 } } }} onPointerMissed={() => selectSpot(null)}>
       <color attach="background" args={[sky]} />
       <fog attach="fog" args={[sky, 16, 34]} />
-      <hemisphereLight args={[sky, '#d9c9a8', night ? 0.25 : 0.55]} />
-      <ambientLight intensity={night ? 0.3 : 0.55} />
-      <directionalLight position={[5, 8, 4]} intensity={night ? 0.5 : 1.4} />
-      <Sea color={tone(sc.sea, night)} />
-      <Island land={tone(sc.land, night)} mount={tone(sc.mount, night)} shallow={tone(new THREE.Color(sc.sea).lerp(new THREE.Color('#ffffff'), 0.35).getStyle(), night)} />
+      <hemisphereLight args={[sky, night ? '#5a5f9a' : '#d9c9a8', night ? 1.0 : 0.8]} />
+      <ambientLight intensity={night ? 0.8 : 0.6} />
+      <directionalLight position={[5, 8, 4]} color={night ? '#b8c4ff' : '#fff1dc'} intensity={night ? 0.7 : 1.0} />
+      <Sea color={pal.sea} />
+      <Island land={pal.land} mount={pal.mount} shallow={pal.shallow} wash={pal.wash} />
       {spots.length > 0 && <Pins spots={spots} />}
       <MapLabels />
       <RoutePath />
@@ -428,6 +466,7 @@ export default function JejuMap3D({ spots, weather }) {
       <CameraRig />
       <FitZoom />
     </Canvas>
+    {night && !detail && <Stars />}
     {detail ? (
       <DetailMap spots={spots} />
     ) : (
