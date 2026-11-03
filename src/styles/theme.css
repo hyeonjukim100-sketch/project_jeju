@@ -617,17 +617,16 @@ p { text-wrap: pretty; }
 @media (max-width: 640px) {
   .app-nav { position: static; }
   .nav-links {
-    position: fixed; left: 50%; bottom: .8rem; transform: translateX(-50%); z-index: 1500;
+    position: fixed; left: 50%; bottom: calc(var(--foot-h, 3rem) + .6rem); transform: translateX(-50%); z-index: 1500;
     display: flex; gap: .2rem; padding: .3rem; border-radius: 999px; background: var(--ink); box-shadow: 0 8px 24px rgba(40, 30, 20, .28);
   }
   .nav-link-item { min-height: 44px; min-width: 44px; padding: 0; border-radius: 50%; color: var(--surface); }
   .nav-link-item:hover { background: color-mix(in srgb, var(--surface) 18%, transparent); color: var(--surface); }
   .nav-link-item.active { background: var(--accent); color: var(--strong-ink); }
   .nav-link-item .emoji { width: 1.4em !important; height: 1.4em !important; }
-  .chat-fab { bottom: 5.4rem; }
-  .app-notice { padding-bottom: 4.6rem; }
+  .chat-fab { bottom: calc(var(--foot-h, 3rem) + 4.8rem); }
   .glass-panel { padding-bottom: 5.4rem; }
-  .toast-stack { bottom: 5.4rem; }
+  .toast-stack { bottom: calc(var(--foot-h, 3rem) + 4.8rem); }
 }
 
 /* 동선 맨 위: 사진 위에 정보를 얹은 큰 카드 */
