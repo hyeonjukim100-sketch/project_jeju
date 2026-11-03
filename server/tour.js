@@ -1,5 +1,6 @@
 // 제주특별자치도 관내 관광지 + 관광지 이미지 (공공데이터포털 odcloud)
 import { visitJejuPhoto } from './visitjeju.js'
+import { AUTO_FIXES, HIDDEN_IDS } from './coordFixes.js'
 
 const OD ='https://api.odcloud.kr/api'
 const SPOT_PATH = '/15111742/v1/uddi:735137ac-cee5-42f5-9119-a8b6c9f784dc'
@@ -40,6 +41,7 @@ const isTravel = (s) => !HIDDEN_KINDS.includes(s.kind) && !(s.kind === '기타' 
 // 성산일출봉: 서쪽 한림 쪽에 찍혀 있었음 / 산방산·산방굴사: 추자도(위도 33.96)로 찍혀 있었으나 실제는 안덕면
 const FIXES = {
   성산일출봉: { lat: 33.459135, lng: 126.940538 },
+  '우도(해양도립공원)': { lat: 33.50645, lng: 126.95299 }, // 원본은 우도 서쪽 바다에 찍혀 있음
   산방산: { lat: 33.241564, lng: 126.31337, address: '제주특별자치도 서귀포시 안덕면 사계리' },
   산방굴사: { lat: 33.237963, lng: 126.313091, address: '제주특별자치도 서귀포시 안덕면 사계리' },
   // 아래는 전수 검토(docs/coord-check.md)에서 카카오 이름·종류·주소가 모두 맞아 보정한 곳. 오름·행사·이름이 겹치는 곳은 제외
@@ -60,7 +62,6 @@ const FIXES = {
   서귀포층패류화석산지: { lat: 33.23952, lng: 126.55805, address: '제주특별자치도 서귀포시 남성중로 43' },
   마라도관광쉼터: { lat: 33.11411, lng: 126.26844, address: '제주특별자치도 서귀포시 대정읍 마라로 131' },
   무릉곶자왈: { lat: 33.29154, lng: 126.26254, address: '제주특별자치도 서귀포시 대정읍 무릉리 산 1' },
-  상추자항: { lat: 33.96221, lng: 126.29748, address: '제주특별자치도 제주시 추자면 추자로 1' },
 }
 
 export async function getSpots() {
@@ -76,7 +77,8 @@ export async function getSpots() {
       address: r['소재지도로명주소'] || r['소재지지번주소'] || '',
       intro: r['관광지소개'] || '',
     }))
-    .map((sp) => ({ ...sp, ...FIXES[sp.title] }))
+    .map((sp) => ({ ...sp, ...AUTO_FIXES[sp.id], ...FIXES[sp.title] })) // 손으로 확인한 값이 자동 보정보다 우선
+    .filter((sp) => FIXES[sp.title] || !HIDDEN_IDS.has(sp.id)) // 주소와 좌표가 어긋나 어느 쪽이 맞는지 모르는 곳(coordFixes.js)은 숨긴다
     .map((sp) => ({ ...sp, tourId: nearestTourId(sp, tourSpots) }))
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && s.lat > 33 && s.lat < 34)
     .filter(isTravel)
