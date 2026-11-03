@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { mock, test } from 'node:test'
-import handler from './chat.js'
+import handler from '../api/chat.js'
 
 // 모델을 부르기 전에 막히는 요청(보낼 말 없음)만 보내서, 호출 횟수 제한만 시험한다
 const call = async (ip) => {
