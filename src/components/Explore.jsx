@@ -591,9 +591,10 @@ export default function Explore() {
     () => viewed.map((st) => spots.find((x) => x.title === st.title) || { ...st, id: `stop:${st.title}` }),
     [viewed, spots],
   )
-  // 모바일은 동선 탭에서 담은 곳만, 계절 추천 탭에서 추천된 곳만 핀으로 남긴다 (웹은 "동선 확인하기" 버튼으로 고른다)
-  const routeOnly = panelTab === 'plan' && (mobile || (onlyRoute && planView === 'mine')) && routeSpots.length > 0
-  const seasonOnly = mobile && panelTab === 'season' && !!seasonPicks[seasonName]?.length
+  // 동선 탭에서는 지금 보는 동선의 곳만, 계절 추천 탭에서는 추천된 곳만 핀으로 남긴다.
+  // 웹은 "전체 핀 보기" 버튼으로 동선 탭의 모든 핀을 다시 볼 수 있다 (모바일은 늘 동선의 핀만).
+  const routeOnly = panelTab === 'plan' && (mobile || onlyRoute) && routeSpots.length > 0
+  const seasonOnly = panelTab === 'season' && !!seasonPicks[seasonName]?.length
   const mapSpots = seasonOnly ? [] : routeOnly ? routeSpots : shown
 
   // 하루 동선·계절 추천을 보면 그 곳들이 있는 지역으로 지도를 옮긴다 (곳이 바뀌거나 탭을 열 때마다)

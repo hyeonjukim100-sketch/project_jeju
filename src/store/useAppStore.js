@@ -138,7 +138,7 @@ export const useAppStore = create((set, get) => ({
       get().toast('추천을 불러오지 못했어요', 'danger')
     }
   },
-  onlyRoute: false, // true 면 지도에 지금 보는 동선의 핀만 보인다
+  onlyRoute: true, // true 면 동선 탭에서 지도에 지금 보는 동선의 핀만 보인다 (웹에서는 버튼으로 끌 수 있다)
   setOnlyRoute: (onlyRoute) => set({ onlyRoute }),
   panelTab: 'places', // 'places' | 'plan' | 'season'
   setPanelTab: (panelTab) => set({ panelTab }),
