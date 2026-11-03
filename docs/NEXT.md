@@ -14,6 +14,15 @@
 7. 디자인 리체크 (글자 위치 규칙 준수: 위치·줄 간격만 조정, 다른 디자인은 건드리지 않기. 메모리 `jeju-design-rules` 참고)
 8. 시연 영상 제작 및 발표 준비 (발표 자료, 시연 순서: 기분 슬라이더 → 지도/동선 → AI 여행 계획 → 버스 도구 → 위험 문구 안내)
 
+## 마지막 보강 (브랜치 `ui-mix-nav-cards`, 2026-11-03)
+- **배포 전에 꼭**: Supabase SQL Editor에서 `supabase/step11_trip_mood.sql` 실행 (여행 기록의 떠나기 전/다녀온 뒤 기분 열). 실행 전에는 기분을 고르고 저장해도 기록은 저장되고 "기분은 저장하지 못했어요" 안내만 뜬다 (`src/lib/reviews.js` `withMoods`)
+- 기분은 점수 없이 이모지 이름만 저장 (`src/lib/moods.js`, `MoodPick.jsx`), 기록 목록에 "A에서 B로" 한 줄. 좋아졌는지 평가하는 말은 쓰지 않음
+- 기록의 사적인 성격 안내(쓰기 화면·기록 목록). "나만 볼 수 있어요" 대신 "다른 이용자에게는 보이지 않아요"로 씀 (DB 관리자는 볼 수 있으므로)
+- 문구 점검: `src/lib/wording.test.js` 가 화면 소스에 치유·치료·힐링·우울증 등 효과 단정 표현이 들어오면 실패 (공식 장소 이름 "서귀포 치유의 숲"만 예외)
+- 호출 횟수 제한: `/api/chat` 1분 15번 + 1시간 100번, `/api/plan` 1분 10번, `/api/legs`·`/api/places` 1분 30번 (`server/rateLimit.js`, 인스턴스마다 따로 세는 간단한 방어. 같은 와이파이를 쓰는 사람이 많으면 한 IP로 보여 일찍 막힐 수 있음)
+- Supabase 권한(RLS) 점검: trips·favorites·mood_logs는 로그인 안 하면 읽기 빈 값, 쓰기 거부. 사진 보관함도 비공개. place_reviews만 공개 읽기(의도). 다른 계정으로 로그인해서 서로의 기록이 안 보이는지는 계정 2개가 필요해 아직 안 해 봄
+- OG: `public/og.png`(1200x630) + `index.html` 메타 태그. 링크 미리보기는 완전한 주소가 필요하므로 Vercel 환경변수 `VITE_SITE_URL`(예: https://배포주소) 설정 후 재배포 (없으면 Vercel이 주는 운영 주소를 씀, `vite.config.js`)
+
 ## 리디자인 (브랜치 `redesign-spot-route`, 2026-11-03)
 설계 `docs/superpowers/specs/2026-11-03-spot-route-redesign-design.md`, 계획 `docs/superpowers/plans/2026-11-03-spot-route-redesign.md`.
 - 장소 설명: 사진 히어로 + 둥근 카드(칩·굵은 이름·작은 귤 점수·굵은 한 줄·3줄 접기). 모바일은 핀을 누르면 화면 전체 (`SpotDetail.jsx`)

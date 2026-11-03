@@ -40,17 +40,29 @@ export async function deleteReview(id) {
   if (error) throw error
 }
 
-export async function saveTrip({ date, entries, stops }) {
-  const { data, error } = await need().from('trips').insert({ trip_date: date, entries, stops }).select().single()
-  if (error) throw error
-  return data
+// 기분 열(supabase/step11_trip_mood.sql)이 아직 없는 DB 에서도 기록 저장은 되게 한다: 기분만 빼고 다시 저장하고 moodSkipped 로 알린다
+const missingColumn = (e) => e?.code === 'PGRST204'
+async function withMoods(write, moods) {
+  let r = await write(moods)
+  if (r.error && missingColumn(r.error)) {
+    r = await write({})
+    if (!r.error && Object.values(moods).some(Boolean)) r.data = { ...r.data, moodSkipped: true }
+  }
+  if (r.error) throw r.error
+  return r.data
 }
 
-// 여행 기록 고치기: 날짜와 장소별 사진·글만 바꾼다 (정리: RLS 에 update 정책 필요, supabase/step10_trip_update.sql)
-export async function updateTrip({ id, date, entries }) {
-  const { data, error } = await need().from('trips').update({ trip_date: date, entries }).eq('id', id).select().single()
-  if (error) throw error
-  return data
+export async function saveTrip({ date, entries, stops, moodBefore, moodAfter }) {
+  const moods = {}
+  if (moodBefore) moods.mood_before = moodBefore
+  if (moodAfter) moods.mood_after = moodAfter
+  return withMoods((m) => need().from('trips').insert({ trip_date: date, entries, stops, ...m }).select().single(), moods)
+}
+
+// 여행 기록 고치기: 날짜, 장소별 사진·글, 기분만 바꾼다 (정리: RLS 에 update 정책 필요, supabase/step10_trip_update.sql)
+export async function updateTrip({ id, date, entries, moodBefore, moodAfter }) {
+  const moods = { mood_before: moodBefore ?? null, mood_after: moodAfter ?? null }
+  return withMoods((m) => need().from('trips').update({ trip_date: date, entries, ...m }).eq('id', id).select().single(), moods)
 }
 
 // 지워지는 옛 사진 정리 (실패해도 기록 수정은 끝난 상태)

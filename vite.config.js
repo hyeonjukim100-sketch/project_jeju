@@ -40,6 +40,16 @@ function devApi(env) {
   }
 }
 
-export default defineConfig(({ mode }) => ({
-  plugins: [react(), devApi(loadEnv(mode, process.cwd(), ''))],
-}))
+// 링크 미리보기(og:image 등)는 완전한 주소가 필요하다. 배포 주소는 VITE_SITE_URL, 없으면 Vercel 이 빌드 때 주는 운영 주소를 쓴다.
+function siteUrl(env) {
+  const raw = env.VITE_SITE_URL || (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
+  return raw.replace(/\/+$/, '')
+}
+function htmlSiteUrl(env) {
+  return { name: 'html-site-url', transformIndexHtml: (html) => html.replaceAll('__SITE_URL__', siteUrl(env)) }
+}
+
+export default defineConfig(({ mode }) => {
+  const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env }
+  return { plugins: [react(), devApi(loadEnv(mode, process.cwd(), '')), htmlSiteUrl(env)] }
+})

@@ -18,3 +18,6 @@ export function createLimiter(max, windowMs = 60_000) {
   tooMany.size = () => hits.size
   return tooMany
 }
+
+// 요청한 사람의 주소: Vercel 이 채워 주는 x-forwarded-for 의 첫 값, 없으면 연결 주소
+export const clientIp = (req) => req.headers?.['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'local'

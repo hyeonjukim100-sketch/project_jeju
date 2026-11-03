@@ -713,3 +713,25 @@ p { text-wrap: pretty; }
   .log-item > .chip { margin-left: auto; }
   .log-item > .chip + .chip { margin-left: 0; }
 }
+
+/* 기록의 사적인 성격 안내 */
+.privacy-note { display: flex; align-items: flex-start; gap: .5rem; margin: 0 0 var(--sp-3); padding: .55rem .8rem; border-radius: 14px; background: var(--soft); color: var(--sub); font-size: .85rem; line-height: 1.5; }
+.privacy-note i { flex: none; line-height: 1.5; color: var(--strong); }
+
+/* 여행 기록 쓰기: 떠나기 전 / 다녀온 뒤 기분 */
+.mood-trace { margin: var(--sp-3) 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--r-card); background: var(--surface); border: 1px solid var(--line); }
+.mood-trace-pair { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3); }
+.mood-pick { flex: 1 1 15rem; min-width: 0; }
+.mood-pick-label { font-weight: 600; font-size: .92rem; margin-bottom: .35rem; }
+.mood-pick-row { display: flex; gap: .35rem; flex-wrap: wrap; }
+.mood-pick-btn { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 2px solid transparent; border-radius: 50%; background: var(--soft); opacity: .6; transition: opacity .15s, transform .15s; }
+.mood-pick-btn:hover { opacity: .9; }
+.mood-pick-btn.on { opacity: 1; border-color: var(--strong); transform: scale(1.08); }
+.mood-pick-name { margin-top: .3rem; min-height: 1.3em; font-size: .85rem; color: var(--sub); }
+
+/* 여행 기록 목록: 기분 변화 한 줄 */
+.diary-mood { display: flex; align-items: center; gap: .45rem; padding: .5rem var(--sp-4); border-bottom: 1px dashed var(--line); font-size: .88rem; color: var(--sub); }
+.diary-mood i { font-size: .8rem; }
+
+/* 동선 요약 줄: 한 단어만 다음 줄로 떨어지지 않게 균형 있게 줄바꿈 */
+.route-sum { text-wrap: balance; }

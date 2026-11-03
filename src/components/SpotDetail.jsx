@@ -96,7 +96,7 @@ export default function SpotDetail({ spot, onBack, onAdd, children }) {
           동선에 담기
         </button>
         {children}
-        {wellness && <div className="spot-credit">웰니스관광지 목록: Visit Jeju</div>}
+        {wellness && <div className="spot-credit">웰니스관광지 목록: Visit Jeju · 건강이나 마음에 대한 효과를 말하는 표시는 아니에요</div>}
         {photo && (
           <div className="spot-credit">
             사진: {photo.credit} ({photo.source})

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import CrisisNotice from '../components/CrisisNotice'
+import MoodPick from '../components/MoodPick'
 import { hasCrisisSignal } from '../lib/crisis'
+import { isMoodName } from '../lib/moods'
 import { listTrips, photoUrls, removePhotos, saveTrip, updateTrip, uploadPhoto } from '../lib/reviews'
 import { MAX_TEXT } from '../lib/tags'
 import { isSupabaseReady } from '../lib/supabase'
@@ -16,6 +18,8 @@ export default function TripWrite() {
   const editId = useSearchParams()[0].get('edit') // 있으면 이미 남긴 기록을 고친다
   const [date, setDate] = useState(today())
   const [items, setItems] = useState(() => (editId ? [] : plan.stops.map((s) => ({ title: s.title, text: '', file: null, preview: null, photo: null }))))
+  const [moodBefore, setMoodBefore] = useState(null) // 떠나기 전 기분 (이모지 이름, 선택)
+  const [moodAfter, setMoodAfter] = useState(null) // 다녀온 뒤 기분 (이모지 이름, 선택)
   const [loaded, setLoaded] = useState(!editId)
   const [busy, setBusy] = useState(false)
   const [warned, setWarned] = useState(false) // 위험 문구 안내를 한 번 보여 줬는지
@@ -39,6 +43,8 @@ export default function TripWrite() {
         const entries = t.entries?.length ? t.entries : t.stops.map((x) => ({ title: x.title }))
         const urls = await photoUrls(entries.map((e) => e.photo)).catch(() => ({}))
         setDate(t.trip_date)
+        setMoodBefore(isMoodName(t.mood_before) ? t.mood_before : null)
+        setMoodAfter(isMoodName(t.mood_after) ? t.mood_after : null)
         setItems(entries.map((e) => ({ title: e.title, text: e.text || '', file: null, photo: e.photo || null, preview: e.photo ? urls[e.photo] || null : null })))
         setLoaded(true)
       })
@@ -104,13 +110,13 @@ export default function TripWrite() {
       }
       if (editId) {
         const old = (await listTrips()).find((r) => String(r.id) === editId)
-        await updateTrip({ id: editId, date, entries })
+        const saved = await updateTrip({ id: editId, date, entries, moodBefore, moodAfter })
         const kept = new Set(entries.map((e) => e.photo))
         await removePhotos((old?.entries || []).map((e) => e.photo).filter((x) => x && !kept.has(x))).catch(() => {})
-        toast('여행 기록을 고쳤어요')
+        toast(saved.moodSkipped ? '여행 기록을 고쳤어요. 기분은 아직 저장하지 못했어요 (데이터베이스 설정이 필요해요)' : '여행 기록을 고쳤어요', saved.moodSkipped ? 'warning' : undefined)
       } else {
-        await saveTrip({ date, entries, stops: plan.stops.map(({ title, kind, type, lat, lng }) => ({ title, kind, type, lat, lng })) })
-        toast('여행을 기록했어요')
+        const saved = await saveTrip({ date, entries, moodBefore, moodAfter, stops: plan.stops.map(({ title, kind, type, lat, lng }) => ({ title, kind, type, lat, lng })) })
+        toast(saved.moodSkipped ? '여행을 기록했어요. 기분은 아직 저장하지 못했어요 (데이터베이스 설정이 필요해요)' : '여행을 기록했어요', saved.moodSkipped ? 'warning' : undefined)
       }
       navigate('/my?tab=trips')
     } catch (e) {
@@ -122,12 +128,24 @@ export default function TripWrite() {
   return (
     <div className="page-stub">
       <h1 className="h3 mb-1">{editId ? '여행 기록 고치기' : '여행 기록 남기기'}</h1>
-      <p className="small text-secondary">장소마다 사진 한 장과 글을 남겨 보세요. 나만 볼 수 있어요.</p>
+      <p className="small text-secondary mb-2">장소마다 사진 한 장과 글을 남겨 보세요.</p>
+      <p className="privacy-note">
+        <i className="bi bi-lock" aria-hidden="true" />
+        <span>이 기록은 나만 볼 수 있어요. 다른 이용자에게는 보이지 않고, 사진도 비공개 보관함에 저장돼요. 언제든 지울 수 있어요.</span>
+      </p>
 
       <label className="auth-field">
         여행한 날
         <input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
       </label>
+
+      <section className="mood-trace" aria-label="이 여행의 마음">
+        <div className="mood-trace-pair">
+          <MoodPick label="떠나기 전 기분" value={moodBefore} onChange={setMoodBefore} />
+          <MoodPick label="다녀온 뒤 기분" value={moodAfter} onChange={setMoodAfter} />
+        </div>
+        <p className="small text-secondary mb-0">정답은 없어요. 그대로여도, 달라졌어도 괜찮아요. 점수는 저장하지 않고 이모지만 남겨요. 마음을 진단하는 기능은 아니에요.</p>
+      </section>
 
       <ol className="trip-write">
         {items.map((it, i) => (

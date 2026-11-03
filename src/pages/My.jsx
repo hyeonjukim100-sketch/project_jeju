@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AuthForm from '../components/AuthForm'
 import CitrusRating from '../components/CitrusRating'
 import Emoji from '../components/Emoji'
+import { moodChangeText, moodOf } from '../lib/moods'
 import { deleteReview, deleteTrip, listMyReviews, listTrips, photoUrls } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { useAppStore } from '../store/useAppStore'
@@ -83,6 +84,11 @@ function Trips({ userId }) {
     )
   }
   return (
+    <>
+    <p className="privacy-note">
+      <i className="bi bi-lock" aria-hidden="true" />
+      <span>여행 기록은 나만 볼 수 있어요. 다른 이용자에게는 보이지 않아요.</span>
+    </p>
     <ul className="diary-list">
       {trips.map((t) => {
         const d = new Date(`${t.trip_date}T00:00:00`)
@@ -103,6 +109,14 @@ function Trips({ userId }) {
                 지우기
               </button>
             </header>
+            {(moodOf(t.mood_before) || moodOf(t.mood_after)) && (
+              <div className="diary-mood" role="img" aria-label={`이 여행의 기분: ${moodChangeText(t.mood_before, t.mood_after)}`}>
+                {moodOf(t.mood_before) && <Emoji name={t.mood_before} size="1.4rem" />}
+                {moodOf(t.mood_before) && moodOf(t.mood_after) && <i className="bi bi-arrow-right" aria-hidden="true" />}
+                {moodOf(t.mood_after) && <Emoji name={t.mood_after} size="1.4rem" />}
+                <span>{moodChangeText(t.mood_before, t.mood_after)}</span>
+              </div>
+            )}
             <ol className="diary-pages">
               {entries.map((e, i) => (
                 <li key={i} className="diary-page">
@@ -127,6 +141,7 @@ function Trips({ userId }) {
         )
       })}
     </ul>
+    </>
   )
 }
 

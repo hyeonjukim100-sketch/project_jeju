@@ -1,24 +1,19 @@
 import { runAgent } from '../server/agent.js'
 import { CRISIS_CONTACTS, hasCrisisSignal } from '../src/lib/crisis.js'
+import { clientIp, createLimiter } from '../server/rateLimit.js'
 
 // POST /api/chat  { messages: [{role, content}], moodLevel }
 // 위험 문구는 모델을 부르기 전에 서버가 먼저 점검하고, 걸리면 코스 대신 연락처 안내만 돌려준다.
 const MAX_MESSAGES = 12
 const MAX_CHARS = 500
-const hits = new Map() // ip → 최근 요청 시각들 (간단한 남용 방지, 인스턴스마다 따로)
-
-function tooMany(ip) {
-  const now = Date.now()
-  const recent = (hits.get(ip) || []).filter((t) => now - t < 60_000)
-  recent.push(now)
-  hits.set(ip, recent)
-  return recent.length > 15
-}
+// 한 사람이 1분에 15번, 한 시간에 100번까지. AI 호출은 비용이 들어서 시간당 한도를 따로 둔다 (인스턴스마다 따로 세는 간단한 방어)
+const perMinute = createLimiter(15)
+const perHour = createLimiter(100, 3_600_000)
+const tooMany = (ip) => perMinute(ip) || perHour(ip)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받아요' })
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'local'
-  if (tooMany(ip)) return res.status(429).json({ error: '잠시 후에 다시 말씀해 주세요' })
+  if (tooMany(clientIp(req))) return res.status(429).json({ error: '잠시 후에 다시 말씀해 주세요' })
 
   const body = req.body || {}
   const raw = Array.isArray(body.messages) ? body.messages.slice(-MAX_MESSAGES) : []

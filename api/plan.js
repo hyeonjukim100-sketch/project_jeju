@@ -1,8 +1,12 @@
 import { buildPlan, LIKE_NAMES, TRANSPORT, WALK, WHO } from '../server/plan.js'
+import { clientIp, createLimiter } from '../server/rateLimit.js'
 
 // POST /api/plan { answers: { who, transport, walk, likes[] }, moodLevel } → 하루 코스 { stops, legs, intro, transport }
+const tooMany = createLimiter(10) // 같은 IP 에서 1분에 10번까지 (코스 만들기는 외부 API 를 여러 번 부른다)
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받아요' })
+  if (tooMany(clientIp(req))) return res.status(429).json({ error: '잠시 후에 다시 만들어 주세요' })
   const a = req.body?.answers || {}
   const answers = {
     who: WHO.includes(a.who) ? a.who : null,

@@ -1,7 +1,11 @@
 import { nearbyPlaces } from '../server/kakao.js'
+import { clientIp, createLimiter } from '../server/rateLimit.js'
 
 // GET /api/places?lat=&lng=&category=CE7|FD6  → 가까운 카페·식당
+const tooMany = createLimiter(30) // 같은 IP 에서 1분에 30번까지 (카카오 하루 호출 한도 보호)
+
 export default async function handler(req, res) {
+  if (tooMany(clientIp(req))) return res.status(429).json({ error: '잠시 후에 다시 눌러 주세요' })
   try {
     const q = new URL(req.url, 'http://x').searchParams
     const lat = Number(q.get('lat'))

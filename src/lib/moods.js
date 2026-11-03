@@ -7,6 +7,18 @@ export const MOOD_LEVELS = [
   { emoji: 'grin', label: '활기 넘쳐요' },
 ]
 
+// 여행 기록의 "떠나기 전 / 다녀온 뒤" 기분: 이모지 이름만 저장하고, 좋아졌는지 나빠졌는지는 평가하지 않는다
+export const moodOf = (name) => MOOD_LEVELS.find((m) => m.emoji === name) ?? null
+export const isMoodName = (name) => moodOf(name) !== null
+export function moodChangeText(before, after) {
+  const b = moodOf(before)
+  const a = moodOf(after)
+  if (b && a) return b.emoji === a.emoji ? `${b.label} 그대로` : `${b.label}에서 ${a.label}로`
+  if (b) return `떠나기 전 ${b.label}`
+  if (a) return `다녀온 뒤 ${a.label}`
+  return ''
+}
+
 // 슬라이더 색: 붉은 산호(지침) → 초록(활기), 파스텔
 export const MOOD_GRADIENT = 'linear-gradient(90deg, #F59A8B 0%, #F4D58A 50%, #8FD1A4 100%)'
 

@@ -1,8 +1,12 @@
 import { legsOf } from '../server/route.js'
+import { clientIp, createLimiter } from '../server/rateLimit.js'
 
 // POST /api/legs { points: [{lat, lng}] }  → 구간별 이동시간(분)·거리(km)
+const tooMany = createLimiter(30) // 같은 IP 에서 1분에 30번까지
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST 만 받아요' })
+  if (tooMany(clientIp(req))) return res.status(429).json({ error: '잠시 후에 다시 눌러 주세요' })
   const pts = Array.isArray(req.body?.points) ? req.body.points.slice(0, 10) : []
   const ok = pts.length >= 2 && pts.every((p) => Number(p.lat) > 33 && Number(p.lat) < 34 && Number(p.lng) > 126 && Number(p.lng) < 127.2)
   if (!ok) return res.status(400).json({ error: '제주 안의 두 곳 이상이 필요해요' })
