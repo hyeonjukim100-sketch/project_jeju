@@ -188,8 +188,9 @@ export const useAppStore = create((set, get) => ({
   generatePlan: async () => {
     set({ planBusy: true })
     try {
-      const { stops, legs } = await fetchRoute(get().moodLevel)
-      set({ recPlan: { stops, legs }, planView: 'rec', panelTab: 'plan' })
+      const mood = get().moodLevel // 만든 때의 기분을 함께 저장해 두어, 슬라이더를 옮겨도 칩이 바뀌지 않게 한다
+      const { stops, legs } = await fetchRoute(mood)
+      set({ recPlan: { stops, legs, mood }, planView: 'rec', panelTab: 'plan' })
     } catch (e) {
       get().toast('동선을 만들지 못했어요. 잠시 후 다시 시도해 주세요', 'danger')
     } finally {

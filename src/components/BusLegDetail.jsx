@@ -20,14 +20,16 @@ export default function BusLegDetail({ from, to }) {
     }
     setStatus('loading')
     Promise.race([fetchBusLeg(point(from), point(to)), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), TIMEOUT))])
-      .then((r) => setOptions(r.options || []))
-      .catch(() => setOptions([]))
-      .finally(() => setStatus('done'))
+      .then((r) => {
+        setOptions(r.options || [])
+        setStatus('done')
+      })
+      .catch(() => setStatus('error')) // 잠깐의 끊김일 수 있으니 다시 눌러 불러올 수 있게 둔다
   }
   const toggle = () => {
     const next = !open
     setOpen(next)
-    if (next && status === 'idle') load()
+    if (next && (status === 'idle' || status === 'error')) load()
   }
 
   return (
@@ -37,7 +39,15 @@ export default function BusLegDetail({ from, to }) {
       </button>
       {open && (
         <div className="bus-detail" role="region" aria-label="버스 세부정보">
-          {status !== 'done' && <div className="bus-detail-note">버스를 찾는 중…</div>}
+          {(status === 'idle' || status === 'loading') && <div className="bus-detail-note">버스를 찾는 중…</div>}
+          {status === 'error' && (
+            <div className="bus-detail-note">
+              버스 정보를 불러오지 못했어요.{' '}
+              <button type="button" className="bus-retry" onClick={load}>
+                다시 찾기
+              </button>
+            </div>
+          )}
           {status === 'done' && options.length > 0 && (
             <ul className="bus-opts">
               {options.map((o) => (

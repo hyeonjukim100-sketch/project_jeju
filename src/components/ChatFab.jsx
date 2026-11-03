@@ -99,7 +99,7 @@ export default function ChatFab() {
     setBusy(true)
     try {
       const course = await fetchPlan(answers, moodLevel)
-      setMessages((ms) => [...ms, { role: 'assistant', content: course.intro, course, plan: true }])
+      setMessages((ms) => [...ms, { role: 'assistant', content: course.intro, course: { ...course, mood: moodLevel }, plan: true }])
     } catch (e) {
       setMessages((ms) => [...ms, { role: 'assistant', content: e.message, error: true, plan: true }])
     } finally {
@@ -269,7 +269,7 @@ export default function ChatFab() {
 
 // 추천 코스 카드: 번호 매긴 장소와 이동시간, 장소별 담기, 코스 전체 담기
 function CourseCard({ course }) {
-  const { stops, legs, transport } = course
+  const { stops, legs, transport, mood } = course
   const mode = MODE[transport] || 'car'
   const spots = useAppStore((s) => s.spots)
   const selectSpot = useAppStore((s) => s.selectSpot)
@@ -278,7 +278,7 @@ function CourseCard({ course }) {
   const setTransport = useAppStore((s) => s.setTransport)
   const setPanelTab = useAppStore((s) => s.setPanelTab)
   const moodLevel = useAppStore((s) => s.moodLevel)
-  const { chip, title } = routeTitle(stops, moodLevel)
+  const { chip, title } = routeTitle(stops, mood ?? moodLevel)
 
   const leg =(l) => (mode === 'bus' ? `🚌 버스로 이동 ${l.km}km` : mode === 'walk' ? `🚶 걸어서 약 ${hm(l.walk)} (${l.km}km)${l.walk > 30 ? ' · 많이 멀어요' : ''}` : `🚗 차로 약 ${l.minutes}분 (${l.km}km)`)
   const plain = ({ tip, ...stop }) => stop

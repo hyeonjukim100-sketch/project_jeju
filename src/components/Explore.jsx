@@ -411,7 +411,7 @@ function PlanTab({ spots }) {
             <p className="small text-secondary mb-0">아직 추천이 없어요.</p>
           ) : (
             <>
-              <RouteList stops={recPlan.stops} legs={recPlan.legs} onOpen={open} hasInfo={info} mood={moodLevel} />
+              <RouteList stops={recPlan.stops} legs={recPlan.legs} onOpen={open} hasInfo={info} mood={recPlan.mood ?? moodLevel} />
               <button type="button" className="btn-soft w-100" onClick={adoptRecPlan}>
                 {plan.stops.length > 0 ? '내 동선을 이 추천으로 바꾸기' : '이 동선으로 하기'}
               </button>

@@ -51,20 +51,24 @@ async function mapLimit(items, fn) {
 
 const near = (p) => getStopsNear(p.lat, p.lng, NEAR_RADIUS).then((l) => l.slice(0, NEAR_COUNT).map(({ id, name, meters }) => ({ id, name, meters })))
 
-export async function getBusLeg(from, to) {
-  const [board, alight] = await Promise.all([near(from), near(to)])
+const DEFAULT_DEPS = { nearStops: near, stopRoutes: getStopRoutes, routeStops: getRouteStops, arrivals: getStopArrivals }
+
+// deps 는 시험에서 가짜 조회 함수를 넣기 위한 자리다. 정류소·노선 하나의 조회가 실패해도 나머지로 계속한다.
+export async function getBusLeg(from, to, deps = DEFAULT_DEPS) {
+  const [board, alight] = await Promise.all([deps.nearStops(from), deps.nearStops(to)])
   if (!board.length || !alight.length) return { options: [] }
 
-  const atBoard = await mapLimit(board, (b) => getStopRoutes(String(b.id)))
+  const atBoard = await mapLimit(board, (b) => deps.stopRoutes(String(b.id)).catch(() => []))
   const routesAtBoard = Object.fromEntries(board.map((b, i) => [b.id, atBoard[i]]))
   const routeIds = [...new Set(atBoard.flat().map((r) => r.routeId))]
-  const stopLists = await mapLimit(routeIds, (id) => getRouteStops(id).catch(() => []))
+  const stopLists = await mapLimit(routeIds, (id) => deps.routeStops(id).catch(() => []))
   const routeStops = Object.fromEntries(routeIds.map((id, i) => [id, stopLists[i]]))
 
   const options = findDirectRoutes({ board, alight, routesAtBoard, routeStops })
   // 승차 정류소에 다음 버스가 몇 분 뒤에 오는지 (모르면 null)
   const withNext = await mapLimit(options, async (o) => {
-    const minutes = await getStopArrivals(String(o.board.id))
+    const minutes = await deps
+      .arrivals(String(o.board.id))
       .then((a) => a.routes.find((r) => r.number === o.number)?.minutes ?? null)
       .catch(() => null)
     return { ...o, nextMin: minutes }
