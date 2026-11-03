@@ -7,3 +7,6 @@ dist
 
 # Blender 작업 결과물(스크립트로 다시 만들 수 있다). 앱이 쓰는 모델은 public/models/haenyeo.glb
 blender/out/
+
+# 브레인스토밍·실행 기록(스크래치)
+.superpowers/
