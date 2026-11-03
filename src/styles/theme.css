@@ -93,6 +93,8 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 .ws-meta span { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
 
 .map-stage { position: relative; flex: 1; min-height: 0; }
+.map-view { position: absolute; inset: 0; }
+.sheet-handle { display: none; }
 .map-stage canvas { position: absolute; inset: 0; }
 .glass-panel {
   z-index: 20; position: absolute; left: 1rem; top: 1rem; width: min(350px, calc(100% - 2rem)); max-height: calc(100% - 2rem); overflow-y: auto;
@@ -206,18 +208,11 @@ body { background: var(--bg); color: var(--ink); overflow: hidden; font-family: 
 /* 모바일 보완: 큰 시트, 챗 버튼 비켜 가기, 날씨 띠 줄이기 */
 @media (max-width: 640px) {
   .glass-panel { padding-bottom: 5rem; }
-  .glass-panel.tall { max-height: 66%; }
   .weather-strip { padding: .45rem 1rem; gap: .2rem 1rem; }
   .ws-meta { font-size: .8rem; gap: .1rem .7rem; }
   .chat-fab { width: 52px; height: 52px; right: .8rem; }
 }
 
-.sheet-toggle { display: none; }
-@media (max-width: 640px) {
-  .sheet-toggle { display: flex; align-items: center; justify-content: center; gap: .3rem; width: 100%; min-height: 32px; margin: -.3rem 0 .4rem; border: 0; background: transparent; color: var(--sub); font-size: .85rem; }
-  .glass-panel.folded { max-height: 7.2rem; overflow: hidden; padding-bottom: .6rem; }
-  .glass-panel.folded > :not(.sheet-toggle):not(.panel-tabs) { display: none; }
-}
 
 /* 8단계: 리뷰 · 여행 기록 */
 .citrus { display: inline-flex; gap: .1rem; align-items: center; vertical-align: middle; }
@@ -676,7 +671,6 @@ p { text-wrap: pretty; }
 /* 마지막 점검: 지도 글자 12px, 접기 줄과 탭의 누르는 면적 키우기 */
 .map-label { font-size: .75rem; }
 @media (max-width: 640px) {
-  .sheet-toggle { min-height: 44px; }
   .panel-tabs button { min-height: 40px; }
 }
 
@@ -734,3 +728,27 @@ p { text-wrap: pretty; }
 
 /* 동선 요약 줄: 한 단어만 다음 줄로 떨어지지 않게 균형 있게 줄바꿈 */
 .route-sum { text-wrap: balance; }
+
+/* ===== 모바일: 지도 아래 시트 =====
+   처음엔 손잡이와 탭만 보이고(지도가 크게), 탭·핀을 누르면 열리고, 손잡이를 끌면 끈 만큼 지도가 줄고 목록이 커진다. */
+@media (max-width: 640px) {
+  .map-stage { display: flex; flex-direction: column; }
+  .map-view { position: relative; inset: auto; flex: 1; min-height: 0; }
+  .map-stage .glass-panel {
+    position: relative; left: auto; right: auto; top: auto; bottom: auto; flex: none; width: 100%;
+    max-height: none; padding-top: 0; padding-bottom: 5.4rem; border-radius: var(--r-card) var(--r-card) 0 0;
+    transition: height .25s var(--ease);
+  }
+  .map-stage .glass-panel.dragging { transition: none; }
+  .map-stage .glass-panel.sheet-peek { height: 11.5rem; overflow: hidden; }
+  .map-stage .glass-panel.sheet-mid { height: 55%; }
+  .map-stage .glass-panel.sheet-full { height: calc(100% - 9rem); }
+  .sheet-handle {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; width: 100%; min-height: 44px; margin: 0 0 .3rem;
+    border: 0; background: transparent; color: var(--sub); font-size: .78rem; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none;
+  }
+  .sheet-grip { width: 2.6rem; height: 5px; border-radius: 999px; background: var(--line); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-stage .glass-panel { transition: none; }
+}

@@ -73,7 +73,18 @@ export default function DetailMap({ spots }) {
     })
     m.on('moveend', () => draw.current())
     map.current = m
-    return () => m.remove()
+    // 모바일에서 아래 시트를 끌어 지도 높이가 바뀌면 타일이 어긋나지 않게 다시 맞춘다
+    let raf = 0
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => m.invalidateSize({ pan: false }))
+    })
+    ro?.observe(box.current)
+    return () => {
+      cancelAnimationFrame(raf)
+      ro?.disconnect()
+      m.remove()
+    }
   }, [])
 
   // 핀·동선·계절 번호 그리기

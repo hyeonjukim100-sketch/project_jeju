@@ -31,6 +31,10 @@ const TRANSPORTS = [
   { key: 'bus', label: '버스', icon: 'bi-bus-front' },
 ]
 const LONG_LEG = 35 // 느린 일정: 한 구간 이동은 35분 안쪽
+// 모바일 아래 시트 높이: 닫힘은 손잡이+탭 높이(rem), 중간은 지도 영역의 비율, 가득은 위에 지도를 조금 남긴다(rem)
+const PEEK_REM = 11.5
+const MID_RATIO = 0.55
+const FULL_GAP_REM = 9
 const clock = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
 // 근처 카페·식당 (카카오 로컬) — 별점·분위기 정보는 없어서 이름·분류·거리만 보여 준다
@@ -518,12 +522,56 @@ export default function Explore() {
   const { spots, weather, selectedSpot: spot, selectSpot, plan, recPlan, planView, onlyRoute, panelTab, setPanelTab, addStop, loadSpots, loadWeather } = useAppStore()
   const [kind, setKind] = useState('전체')
   const [query, setQuery] = useState('')
-  const [folded, setFolded] = useState(false) // 모바일: 시트를 접어 지도를 넓게 본다
+  // 모바일 아래 시트: 처음엔 탭만 보이고(peek), 탭이나 핀을 누르면 열리며(mid), 끌어서 더 키울 수 있다(full)
+  const [size, setSize] = useState('peek')
+  const [dragH, setDragH] = useState(null)
+  const panelRef = useRef(null)
+  const drag = useRef({ y: 0, h: 0, moved: 0 })
 
   useEffect(() => {
     loadSpots()
     loadWeather()
   }, [])
+
+  // 장소를 고르거나 다른 탭으로 가면 닫혀 있던 시트를 연다 (처음 화면에서는 열지 않는다)
+  const prev = useRef({ spot, panelTab })
+  useEffect(() => {
+    const was = prev.current
+    prev.current = { spot, panelTab }
+    const picked = spot && spot !== was.spot // 장소를 새로 골랐다
+    if (picked || panelTab !== was.panelTab) setSize((s) => (s === 'peek' ? 'mid' : s))
+  }, [spot, panelTab])
+
+  const heights = () => {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+    const stage = panelRef.current.parentElement.offsetHeight
+    return { peek: PEEK_REM * rem, mid: stage * MID_RATIO, full: stage - FULL_GAP_REM * rem }
+  }
+  const onGripDown = (e) => {
+    drag.current = { y: e.clientY, h: panelRef.current.offsetHeight, moved: 0 }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  const onGripMove = (e) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+    const d = drag.current
+    d.moved = Math.max(d.moved, Math.abs(e.clientY - d.y))
+    if (d.moved < 6) return
+    const h = heights()
+    setDragH(Math.min(h.full, Math.max(h.peek, d.h + d.y - e.clientY)))
+  }
+  const onGripUp = () => {
+    const d = drag.current
+    if (d.moved < 6) return
+    // 놓은 자리에서 가장 가까운 단계로 붙는다
+    const h = heights()
+    const now = panelRef.current.offsetHeight
+    setSize(Object.keys(h).reduce((a, k) => (Math.abs(h[k] - now) < Math.abs(h[a] - now) ? k : a)))
+    setDragH(null)
+  }
+  const onGripClick = () => {
+    if (drag.current.moved >= 6) return void (drag.current.moved = 0)
+    setSize((s) => (s === 'peek' ? 'mid' : 'peek'))
+  }
 
   const kinds = ['전체', '푸른 공간', '초록 공간', ...KIND_CHIPS]
   const shown = useMemo(() => {
@@ -549,10 +597,24 @@ export default function Explore() {
       <WeatherStrip w={weather} />
       <SuggestStrip />
       <div className="map-stage">
-        <JejuMap3D spots={mapSpots} weather={weather} />
-        <aside className={`glass-panel ${panelTab === 'plan' || panelTab === 'season' || spot ? 'tall' : ''} ${folded ? 'folded' : ''}`}>
-          <button type="button" className="sheet-toggle" onClick={() => setFolded((f) => !f)} aria-expanded={!folded} aria-label={folded ? '패널 펼치기' : '패널 접고 지도 보기'}>
-            <i className={`bi bi-chevron-${folded ? 'up' : 'down'}`} /> {folded ? '펼치기' : '지도 보기'}
+        <div className="map-view">
+          <JejuMap3D spots={mapSpots} weather={weather} />
+        </div>
+        <aside ref={panelRef} className={`glass-panel sheet-${size} ${dragH != null ? 'dragging' : ''}`} style={dragH != null ? { height: dragH } : undefined}>
+          <button
+            type="button"
+            className="sheet-handle"
+            aria-expanded={size !== 'peek'}
+            aria-label={size === 'peek' ? '목록 열기' : '목록 닫고 지도 보기'}
+            onMouseDown={(e) => e.preventDefault()}
+            onPointerDown={onGripDown}
+            onPointerMove={onGripMove}
+            onPointerUp={onGripUp}
+            onPointerCancel={onGripUp}
+            onClick={onGripClick}
+          >
+            <span className="sheet-grip" aria-hidden="true" />
+            <span className="sheet-handle-text">{size === 'peek' ? '위로 끌어 목록 보기' : '끌어서 지도와 목록 크기 바꾸기'}</span>
           </button>
           <div className="panel-tabs" role="tablist">
             <button type="button" role="tab" aria-selected={panelTab === 'places'} className={panelTab === 'places' ? 'on' : ''} onClick={() => setPanelTab('places')}>
