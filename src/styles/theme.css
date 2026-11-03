@@ -698,3 +698,18 @@ p { text-wrap: pretty; }
   .chip-slider-arrow.left { left: 0; padding-left: .3rem; background: linear-gradient(to left, transparent, var(--surface) 70%); }
   .chip-slider.has-right .chip-slider-arrow.right, .chip-slider.has-left .chip-slider-arrow.left { opacity: 1; pointer-events: auto; }
 }
+
+/* 여행 기록 머리줄(모바일): 날짜와 수정·지우기를 한 줄에, 장소 수는 아래 줄에 */
+@media (max-width: 640px) {
+  .diary-head .chip { order: 2; }
+  .diary-head a.chip { margin-left: auto; }
+  .diary-count { order: 3; flex-basis: 100%; margin-left: 0; }
+}
+
+/* 찜한 곳(모바일): 좁으면 글은 위, 버튼 둘은 아래 줄 오른쪽으로 내려서 잘리지 않게 */
+@media (max-width: 640px) {
+  .log-item { flex-wrap: wrap; }
+  .log-item > .flex-grow-1 { flex: 1 1 0; min-width: 8rem; }
+  .log-item > .chip { margin-left: auto; }
+  .log-item > .chip + .chip { margin-left: 0; }
+}
