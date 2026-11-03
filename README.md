@@ -116,7 +116,7 @@ npm run dev                  # http://localhost:5173
 | 이름 | 용도 |
 |---|---|
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Supabase 연결 (공개돼도 되는 값, 데이터는 RLS가 지켜요) |
-| `DATA_GO_KR_KEY` | 공공데이터포털 (관광지·기상청) |
+| `DATA_GO_KR_KEY` | 공공데이터포털 (관광지·기상청·TAGO 버스 정류소·노선·도착, 서비스마다 활용신청 필요) |
 | `KAKAO_REST_KEY` | Kakao 로컬 API |
 | `VISIT_JEJU_API` | Visit Jeju |
 | `JEJU_BUS_KEY` | 제주데이터허브 버스 노선 |
