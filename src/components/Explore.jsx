@@ -594,8 +594,10 @@ export default function Explore() {
 
   return (
     <section id="explore" className="explore">
-      <WeatherStrip w={weather} />
-      <SuggestStrip />
+      <div className="explore-info">
+        <WeatherStrip w={weather} />
+        <SuggestStrip />
+      </div>
       <div className="map-stage">
         <div className="map-view">
           <JejuMap3D spots={mapSpots} weather={weather} />

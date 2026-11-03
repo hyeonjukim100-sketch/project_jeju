@@ -374,6 +374,19 @@ function CameraRig() {
   return <OrbitControls ref={controls} makeDefault screenSpacePanning={false} zoomToCursor minDistance={1.2} maxDistance={20} maxPolarAngle={Math.PI / 2.2} onStart={() => (goal.current = null)} />
 }
 
+// 모바일에서 지도 칸이 낮아지면(아래 목록을 키우면) 섬이 작아 보이지 않게 살짝 확대한다 (칸이 가로로 길수록 조금 더)
+function FitZoom() {
+  const { camera, size } = useThree()
+  const goal = useRef(1)
+  goal.current = window.innerWidth < 640 ? Math.min(1.3, Math.max(1, 1 + (size.width / size.height - 0.8) * 0.15)) : 1
+  useFrame(() => {
+    if (Math.abs(camera.zoom - goal.current) < 0.002) return
+    camera.zoom += (goal.current - camera.zoom) * 0.15
+    camera.updateProjectionMatrix()
+  })
+  return null
+}
+
 export default function JejuMap3D({ spots, weather }) {
   const selectSpot = useAppStore((s) => s.selectSpot)
   const detail = useAppStore((s) => s.detail)
@@ -398,6 +411,7 @@ export default function JejuMap3D({ spots, weather }) {
       <RoutePath />
       <SeasonPins />
       <CameraRig />
+      <FitZoom />
     </Canvas>
     {detail ? (
       <DetailMap spots={spots} />

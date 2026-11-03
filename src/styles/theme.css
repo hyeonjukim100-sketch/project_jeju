@@ -752,3 +752,15 @@ p { text-wrap: pretty; }
 @media (prefers-reduced-motion: reduce) {
   .map-stage .glass-panel { transition: none; }
 }
+
+/* ===== 모바일: 3쪽 구성 (첫 화면 / 날씨·오늘의 제안 / 지도·목록) 한 쪽씩 딱 멈추며 넘긴다 ===== */
+@media (max-width: 640px) {
+  .app-main { scroll-snap-type: y mandatory; }
+  .hero { min-height: calc(100dvh - var(--nav-h) - var(--foot-h, 3rem)); }
+  .explore { scroll-snap-align: none; }
+  .explore-info {
+    min-height: calc(100dvh - var(--nav-h) - var(--foot-h, 3rem)); scroll-snap-align: start;
+    display: flex; flex-direction: column; justify-content: center; gap: .3rem; padding: .6rem 0;
+  }
+  .map-stage { height: calc(100dvh - var(--nav-h) - var(--foot-h, 3rem)); scroll-snap-align: start; }
+}
