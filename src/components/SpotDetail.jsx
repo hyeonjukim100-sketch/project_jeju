@@ -11,6 +11,7 @@ import { SPACE_LABEL } from '../lib/space'
 import { categoryLabel, splitIntro } from '../lib/spotText'
 import { isSupabaseReady } from '../lib/supabase'
 import { useIsMobile } from '../lib/useIsMobile'
+import { isWellness } from '../lib/wellness'
 
 const TYPE_EMOJI = { meal: 'food', rest: 'coffee' }
 
@@ -69,6 +70,11 @@ export default function SpotDetail({ spot, onBack, onAdd, children }) {
           <Emoji name={emoji} size="1.1em" /> {categoryLabel(spot)}
         </span>
         {spot.space && <span className={`space-badge ${spot.space}`}>{SPACE_LABEL[spot.space]}</span>}
+        {isWellness(spot.title) && (
+          <span className="wellness-badge">
+            <Emoji name="herb" size="1.1em" /> 제주 웰니스관광지 <small>Visit Jeju 소개</small>
+          </span>
+        )}
         <h2 className="spot-name">{spot.title}</h2>
         {spot.address && <div className="spot-addr">{spot.address}</div>}
         {score !== undefined && (
