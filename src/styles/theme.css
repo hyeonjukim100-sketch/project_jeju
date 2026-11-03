@@ -660,3 +660,7 @@ p { text-wrap: pretty; }
   .suggest-title { font-size: 1rem; }
   .suggest-note { font-size: .82rem; margin-top: .1rem; }
 }
+
+@media (max-width: 640px) {
+  .suggest-card:nth-child(n + 3) { display: none; }
+}
