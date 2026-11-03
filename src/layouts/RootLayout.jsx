@@ -2,12 +2,17 @@ import { useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import ChatFab from '../components/ChatFab'
 import Emoji from '../components/Emoji'
+import { MongsumiFace } from '../components/Mongsumi'
+import { useIsMobile } from '../lib/useIsMobile'
 import { NAV_ITEMS } from '../router'
 import { useAppStore } from '../store/useAppStore'
 
 export default function RootLayout() {
   const toasts = useAppStore((s) => s.toasts)
   const initAuth = useAppStore((s) => s.initAuth)
+  const mobile = useIsMobile()
+  const chatOpen = useAppStore((s) => s.chatOpen)
+  const setChatOpen = useAppStore((s) => s.setChatOpen)
   useEffect(() => initAuth(), [])
   const { pathname, hash } = useLocation()
   const here = pathname === '/' ? `/${hash || '#hero'}` : pathname
@@ -24,6 +29,11 @@ export default function RootLayout() {
               <Emoji name={n.emoji} size="1.3em" /> <span>{n.label}</span>
             </Link>
           ))}
+          {mobile && (
+            <button type="button" className={`nav-link-item nav-chat ${chatOpen ? 'active' : ''}`} onClick={() => setChatOpen((o) => !o)} aria-label={chatOpen ? '대화창 닫기' : '몽숨이 AI와 대화하기'} aria-pressed={chatOpen}>
+              <MongsumiFace size="1.9rem" />
+            </button>
+          )}
         </nav>
       </header>
 

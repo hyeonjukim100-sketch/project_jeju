@@ -664,3 +664,12 @@ p { text-wrap: pretty; }
 @media (max-width: 640px) {
   .suggest-card:nth-child(n + 3) { display: none; }
 }
+
+/* 몽숨이: 모바일에서는 하단 탭 바의 한 칸, 넓은 화면에서는 떠 있는 버튼 */
+.nav-chat { display: none; border: 0; background: transparent; padding: 0; overflow: hidden; }
+@media (max-width: 640px) {
+  .nav-chat { display: inline-flex; }
+  .chat-fab { display: none; }
+  .chat-panel { right: .8rem; left: .8rem; width: auto; bottom: 5.4rem; max-height: calc(100dvh - 8rem); }
+}
+.nav-chat .mongsumi-face { display: block; margin: auto; }

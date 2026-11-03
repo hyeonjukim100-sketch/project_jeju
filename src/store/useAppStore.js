@@ -45,6 +45,8 @@ export const useAppStore = create((set, get) => ({
   // 챗 열기: 제안 카드의 "AI에게 더 물어보기" 가 질문을 미리 채워 챗을 연다 (자동으로 보내지는 않는다)
   chatDraft: null,
   askAi: (text) => set({ chatDraft: { text, at: Date.now() } }),
+  chatOpen: false,
+  setChatOpen: (v) => set((s) => ({ chatOpen: typeof v === 'function' ? v(s.chatOpen) : v })),
 
   // 오늘의 기분 (0 지침 ~ 4 활기). 점수로 저장하지 않고 화면에서만 쓴다.
   moodLevel: 2,

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { fetchPlan, sendChat } from '../api/client'
 import { hasCrisisSignal } from '../lib/crisis'
 import { routeTitle } from '../lib/routeTitle'
+import { useIsMobile } from '../lib/useIsMobile'
 import { useAppStore } from '../store/useAppStore'
 import { MongsumiFace } from './Mongsumi'
 
@@ -47,7 +48,9 @@ export default function ChatFab() {
   const moodLevel = useAppStore((s) => s.moodLevel)
   const chatDraft = useAppStore((s) => s.chatDraft)
   const toast = useAppStore((s) => s.toast)
-  const [open, setOpen] = useState(false)
+  const mobile = useIsMobile() // 모바일에서는 하단 탭 바의 몽숨이 칸이 대신 연다
+  const open = useAppStore((s) => s.chatOpen)
+  const setOpen = useAppStore((s) => s.setChatOpen)
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -260,9 +263,11 @@ export default function ChatFab() {
           <p className="chat-note">AI가 만든 답이라 틀릴 수 있어요.<br />의료·상담이 아닌 여행 추천이에요.</p>
         </div>
       )}
-      <button type="button" className="chat-fab" onClick={() => setOpen((o) => !o)} aria-label={open ? '대화창 닫기' : '몽숨이 AI와 대화하기'}>
-        <MongsumiFace size="2.8rem" />
-      </button>
+      {!mobile && (
+        <button type="button" className="chat-fab" onClick={() => setOpen((o) => !o)} aria-label={open ? '대화창 닫기' : '몽숨이 AI와 대화하기'}>
+          <MongsumiFace size="2.8rem" />
+        </button>
+      )}
     </>
   )
 }
