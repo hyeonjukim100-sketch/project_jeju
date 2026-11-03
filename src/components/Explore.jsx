@@ -35,6 +35,7 @@ const LONG_LEG = 35 // 느린 일정: 한 구간 이동은 35분 안쪽
 // 모바일 아래 시트 높이: 닫힘은 손잡이+탭 높이(rem), 중간은 지도 영역의 비율, 가득은 위에 남기는 지도 높이(rem)
 const PEEK_REM = 11.5
 const MID_RATIO = 0.55
+const EXPAND_PX = 24 // 목록을 이만큼 내리면 가득 펼친다
 const FULL_GAP_REM = 0 // 가득 올리면 지도를 완전히 덮는다
 const clock = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
@@ -570,6 +571,19 @@ export default function Explore() {
     setSize(Object.keys(h).reduce((a, k) => (Math.abs(h[k] - now) < Math.abs(h[a] - now) ? k : a)))
     setDragH(null)
   }
+  // 반쯤 열린 목록을 아래로 조금 더 내리면 화면 가득 펼쳐서 지도는 자연스럽게 사라지고, 맨 위까지 다시 올리면 지도가 돌아온다
+  const lastTop = useRef(0)
+  const expandedAt = useRef(0)
+  const onPanelScroll = (e) => {
+    const top = e.currentTarget.scrollTop
+    const down = top > lastTop.current
+    lastTop.current = top
+    if (!mobile || dragH != null) return
+    if (size === 'mid' && down && top > EXPAND_PX) {
+      expandedAt.current = Date.now()
+      setSize('full')
+    } else if (size === 'full' && !down && top <= 0 && Date.now() - expandedAt.current > 800) setSize('mid') // 펼치는 동안 스크롤 위치가 보정되는 것은 무시
+  }
   const onGripClick = () => {
     if (drag.current.moved >= 6) return void (drag.current.moved = 0)
     setSize((s) => (s === 'peek' ? 'mid' : 'peek'))
@@ -615,7 +629,7 @@ export default function Explore() {
         <div className="map-view">
           <JejuMap3D spots={mapSpots} weather={weather} />
         </div>
-        <aside ref={panelRef} className={`glass-panel sheet-${size} ${dragH != null ? 'dragging' : ''}`} style={dragH != null ? { height: dragH } : undefined}>
+        <aside ref={panelRef} className={`glass-panel sheet-${size} ${dragH != null ? 'dragging' : ''}`} style={dragH != null ? { height: dragH } : undefined} onScroll={onPanelScroll}>
           <button
             type="button"
             className="sheet-handle"
