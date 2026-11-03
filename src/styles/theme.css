@@ -534,9 +534,9 @@ p { text-wrap: pretty; }
 .clamp-more { min-height: 44px; padding: .2rem 0; border: 0; background: transparent; color: var(--ink); font-weight: 700; font-size: .88rem; display: inline-flex; align-items: center; gap: .25rem; }
 
 /* 모바일: 핀을 누르면 화면 전체가 장소 설명으로 */
-.spot-full { position: fixed; inset: 0; z-index: 1000; overflow-y: auto; background: var(--bg); padding-bottom: 6rem; }
+.spot-full { position: fixed; inset: 0; z-index: 1000; overflow-y: auto; background: var(--surface); }
 .spot-full .spot-hero { aspect-ratio: auto; height: 38vh; max-height: none; border-radius: 0; }
-.spot-full .spot-sheet { border-radius: 28px 28px 0 0; min-height: 62vh; }
+.spot-full .spot-sheet { border-radius: 28px 28px 0 0; min-height: 62vh; padding-bottom: 6rem; }
 
 /* ===== 리디자인: 동선 카드 ===== */
 .route-head { margin: .2rem 0 .7rem; }

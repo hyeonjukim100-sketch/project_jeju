@@ -14,6 +14,14 @@
 7. 디자인 리체크 (글자 위치 규칙 준수: 위치·줄 간격만 조정, 다른 디자인은 건드리지 않기. 메모리 `jeju-design-rules` 참고)
 8. 시연 영상 제작 및 발표 준비 (발표 자료, 시연 순서: 기분 슬라이더 → 지도/동선 → AI 여행 계획 → 버스 도구 → 위험 문구 안내)
 
+## 리디자인 (브랜치 `redesign-spot-route`, 2026-11-03)
+설계 `docs/superpowers/specs/2026-11-03-spot-route-redesign-design.md`, 계획 `docs/superpowers/plans/2026-11-03-spot-route-redesign.md`.
+- 장소 설명: 사진 히어로 + 둥근 카드(칩·굵은 이름·작은 귤 점수·굵은 한 줄·3줄 접기). 모바일은 핀을 누르면 화면 전체 (`SpotDetail.jsx`)
+- 동선: 카드형(활동 이름·머무는 시간·이동 칩), 제목은 장소 종류에서 짓고 끝말은 기분에 따라 바뀜 (`src/lib/routeTitle.js`). 챗 코스 카드에도 적용
+- 버스 구간 "세부정보" 탭: 직행 노선·승하차 정류장·다음 버스 분 (`/api/bus-leg`, `server/busLeg.js`, 비공식 도청 API라 발표 직전 재확인)
+- 시험: `npm test`(node:test, 순수 로직만)
+- 알려진 것: 직행만 찾음(환승 없음), 굵은 한 줄은 첫 문장이 60자 이내일 때만, 콘솔의 React "synchronously unmount a root" 오류는 리디자인 이전부터 있음(3D 쪽)
+
 ## 지금까지 된 것 (최근, 커밋 63e5671 푸시됨)
 - 여행 계획 챗 "함께 여행 계획 세우기": 누구와 → 이동 수단 → 걷는 정도 → 하고 싶은 것 → 코스 카드 (`src/components/ChatFab.jsx`, `server/plan.js`, `api/plan.js`)
 - 코스 카드: 장소별 "+ 담기", "이 코스를 내 동선에 담기"
