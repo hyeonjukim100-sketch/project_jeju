@@ -18,9 +18,16 @@ test('splitIntro handles empty and missing text', () => {
   assert.deepEqual(splitIntro(null), { lead: '', rest: '' })
 })
 
-test('splitIntro shortens a long unpunctuated line and keeps the full text as rest', () => {
-  const long = '가'.repeat(60)
-  assert.deepEqual(splitIntro(long), { lead: '가'.repeat(40) + '…', rest: long })
+test('splitIntro drops the bold lead when the first sentence is too long, so nothing repeats', () => {
+  const long = '가'.repeat(70)
+  assert.deepEqual(splitIntro(long), { lead: '', rest: long })
+  const twoSentences = `${'가'.repeat(70)}. 둘째 문장이에요.`
+  assert.deepEqual(splitIntro(twoSentences), { lead: '', rest: twoSentences })
+})
+
+test('splitIntro keeps a first sentence of up to 60 characters as the lead', () => {
+  const sixty = '가'.repeat(59) + '.'
+  assert.deepEqual(splitIntro(sixty), { lead: sixty, rest: '' })
 })
 
 test('splitIntro treats a line break as a sentence end', () => {

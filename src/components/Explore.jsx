@@ -7,9 +7,9 @@ import Emoji from './Emoji'
 import CitrusRating from './CitrusRating'
 import FavButton from './FavButton'
 import ReviewBox from './ReviewBox'
+import SpotDetail from './SpotDetail'
 import TripRecord from './TripRecord'
-import { fetchPhotos, fetchPlaces } from '../api/client'
-import { SPACE_LABEL } from '../lib/space'
+import { fetchPlaces } from '../api/client'
 import { ratingsFor } from '../lib/reviews'
 import { isSupabaseReady } from '../lib/supabase'
 import { KIND_CHIPS, KIND_EMOJI, KIND_GROUP } from '../lib/moods'
@@ -30,33 +30,6 @@ const TRANSPORTS = [
 ]
 const LONG_LEG = 35 // 느린 일정: 한 구간 이동은 35분 안쪽
 const clock = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
-
-function Gallery({ spot }) {
-  const { title } = spot
-  const [photos, setPhotos] = useState(null)
-  const [idx, setIdx] = useState(0)
-  useEffect(() => {
-    setPhotos(null)
-    setIdx(0)
-    fetchPhotos(spot).then((r) => setPhotos(r.photos)).catch(() => setPhotos([]))
-  }, [spot.id])
-
-  if (photos === null) return <div className="gallery-empty">사진을 찾는 중…</div>
-  if (!photos.length) return <div className="gallery-empty">이곳의 사진은 아직 없어요</div>
-  return (
-    <div>
-      <img className="gallery-main" src={photos[idx].url} alt={title} loading="lazy" />
-      <div className="gallery-thumbs">
-        {photos.map((p, i) => (
-          <img key={p.url} src={p.url} alt="" className={i === idx ? 'on' : ''} onClick={() => setIdx(i)} loading="lazy" />
-        ))}
-      </div>
-      <div className="small text-secondary mt-1">
-        사진: {photos[idx].credit} ({photos[idx].source})
-      </div>
-    </div>
-  )
-}
 
 // 근처 카페·식당 (카카오 로컬) — 별점·분위기 정보는 없어서 이름·분류·거리만 보여 준다
 function Nearby({ spot }) {
@@ -519,31 +492,13 @@ export default function Explore() {
           ) : panelTab === 'plan' ? (
             <PlanTab spots={spots} />
           ) : spot ? (
-            <>
-              <button type="button" className="chip mb-2" onClick={() => selectSpot(null)}>
-                <i className="bi bi-chevron-left" /> 목록으로
-              </button>
-              <div className="panel-kicker">
-                {KIND_EMOJI[spot.kind] && <Emoji name={KIND_EMOJI[spot.kind]} size="1.1em" />} {spot.kind}
-                {spot.space && <span className={`space-badge ${spot.space}`}>{SPACE_LABEL[spot.space]}</span>}
-              </div>
-              <h2 className="panel-title">{spot.title}</h2>
-              <div className="small text-secondary mb-2">{spot.address}</div>
-              <div className="spot-actions">
-                <button
-                  type="button"
-                  className="btn-soft"
-                  onClick={() => addStop({ type: 'spot', title: spot.title, kind: spot.kind, address: spot.address, lat: spot.lat, lng: spot.lng, tourId: spot.tourId || null })}
-                >
-                  동선에 담기
-                </button>
-                <FavButton placeId={spot.id} title={spot.title} kind={spot.kind} address={spot.address} lat={spot.lat} lng={spot.lng} />
-              </div>
-              <Gallery spot={spot} />
+            <SpotDetail
+              spot={spot}
+              onBack={() => selectSpot(null)}
+              onAdd={() => addStop({ type: 'spot', title: spot.title, kind: spot.kind, address: spot.address, lat: spot.lat, lng: spot.lng, tourId: spot.tourId || null })}
+            >
               <Nearby spot={spot} />
-              <p className="spot-intro">{spot.intro}</p>
-              <ReviewBox placeId={spot.id} title={spot.title} />
-            </>
+            </SpotDetail>
           ) : (
             <>
               <h2 className="panel-title">느린 제주 마음지도</h2>
